@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "package": "com.saltclient.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BackgroundRendererMixin",
+    "CameraMixin",
+    "ChatHudMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "EntityMixin",
+    "InGameHudMixin",
+    "InGameOverlayRendererMixin",
+    "MinecraftClientMixin",
+    "MouseMixin",
+    "ScreenMixin",
+    "ScreenshotRecorderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
