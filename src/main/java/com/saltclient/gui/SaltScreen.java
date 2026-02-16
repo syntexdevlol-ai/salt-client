@@ -21,16 +21,16 @@ import java.util.Locale;
  * - Manual list rendering with scrolling.
  */
 public final class SaltScreen extends Screen {
-    private static final int BG = 0xCC12161F;
-    private static final int PANEL = 0xDD1A2130;
-    private static final int PANEL_BORDER = 0xFF2B3A55;
-    private static final int ROW = 0xFF1E2A3D;
-    private static final int ROW_HOVER = 0xFF25344D;
-    private static final int ROW_DISABLED = 0xFF182233;
-    private static final int TEXT = 0xFFE6ECFF;
-    private static final int MUTED = 0xFF9FB0D8;
+    private static final int BG = 0xD90B1018;
+    private static final int PANEL = 0xE0131A27;
+    private static final int PANEL_BORDER = 0xFF23324A;
+    private static final int ROW = 0xFF172133;
+    private static final int ROW_HOVER = 0xFF1E2B41;
+    private static final int ROW_DISABLED = 0xFF101827;
+    private static final int TEXT = 0xFFE6EBFA;
+    private static final int MUTED = 0xFF8EA1C8;
     private static final int TOGGLE_ON = 0xFF7BC96F;
-    private static final int TOGGLE_OFF = 0xFF51607A;
+    private static final int TOGGLE_OFF = 0xFF3C495F;
 
     private TextFieldWidget search;
     private ModuleCategory selected = ModuleCategory.ALL;

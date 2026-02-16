@@ -14,6 +14,10 @@ import net.minecraft.text.Text;
  * This is intentionally simple: a few +/- buttons and a color cycle.
  */
 public final class CrosshairEditorScreen extends Screen {
+    private static final int BG = 0xD90B1018;
+    private static final int TEXT = 0xFFE6EBFA;
+    private static final int MUTED = 0xFF8EA1C8;
+
     private final Screen parent;
     private CustomCrosshairModule crosshair;
 
@@ -116,8 +120,8 @@ public final class CrosshairEditorScreen extends Screen {
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         // Don't call Screen#renderBackground here; on some clients (e.g. Pojav) it can enable expensive blur.
-        ctx.fill(0, 0, this.width, this.height, 0xCC12161F);
-        ctx.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 16, 0xFFE6ECFF);
+        ctx.fill(0, 0, this.width, this.height, BG);
+        ctx.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 16, TEXT);
 
         // Crosshair preview
         int cx = this.width / 2;
@@ -130,7 +134,7 @@ public final class CrosshairEditorScreen extends Screen {
                 + " Gap=" + ((com.saltclient.setting.IntSetting) crosshair.getSetting("gap")).getValue()
                 + " Thick=" + ((com.saltclient.setting.IntSetting) crosshair.getSetting("thickness")).getValue()
                 + " Dot=" + (((com.saltclient.setting.BoolSetting) crosshair.getSetting("dot")).getValue() ? "ON" : "OFF");
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(info), cx, cy + 22, 0xFF9FB0D8);
+        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(info), cx, cy + 22, MUTED);
 
         super.render(ctx, mouseX, mouseY, delta);
     }

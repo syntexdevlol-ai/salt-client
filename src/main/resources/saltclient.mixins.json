@@ -8,6 +8,7 @@
     "ChatHudMixin",
     "ClientPlayNetworkHandlerMixin",
     "EntityMixin",
+    "GameRendererInvoker",
     "InGameHudMixin",
     "InGameOverlayRendererMixin",
     "MinecraftClientMixin",
@@ -19,4 +20,3 @@
     "defaultRequire": 1
   }
 }
-

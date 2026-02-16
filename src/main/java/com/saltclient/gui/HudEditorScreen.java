@@ -19,11 +19,11 @@ import java.util.Map;
  * This is intentionally simple and safe for Pojav.
  */
 public final class HudEditorScreen extends Screen {
-    private static final int BG = 0x88000000;
+    private static final int BG = 0xB0000000;
     private static final int BORDER = 0xFF7BC96F;
     private static final int BORDER_HOVER = 0xFFFFD66E;
-    private static final int TEXT = 0xFFE6ECFF;
-    private static final int MUTED = 0xFF9FB0D8;
+    private static final int TEXT = 0xFFE6EBFA;
+    private static final int MUTED = 0xFF8EA1C8;
 
     private final Screen parent;
 
@@ -164,4 +164,3 @@ public final class HudEditorScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 }
-

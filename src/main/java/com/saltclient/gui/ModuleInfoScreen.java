@@ -13,11 +13,11 @@ import net.minecraft.text.Text;
  * This exists mainly so right-click can open *something* predictable.
  */
 public final class ModuleInfoScreen extends Screen {
-    private static final int BG = 0xCC12161F;
-    private static final int PANEL = 0xDD1A2130;
-    private static final int PANEL_BORDER = 0xFF2B3A55;
-    private static final int TEXT = 0xFFE6ECFF;
-    private static final int MUTED = 0xFF9FB0D8;
+    private static final int BG = 0xD90B1018;
+    private static final int PANEL = 0xE0131A27;
+    private static final int PANEL_BORDER = 0xFF23324A;
+    private static final int TEXT = 0xFFE6EBFA;
+    private static final int MUTED = 0xFF8EA1C8;
 
     private final Screen parent;
     private final Module module;

@@ -13,6 +13,7 @@ import com.saltclient.module.impl.misc.ScreenshotHelperModule;
 import com.saltclient.module.impl.performance.FontRendererModule;
 import com.saltclient.module.impl.performance.RamCleanerModule;
 import com.saltclient.module.impl.visual.FullBrightModule;
+import com.saltclient.module.impl.visual.MotionBlurModule;
 import com.saltclient.module.impl.visual.ZoomModule;
 import com.saltclient.util.HudLayout;
 import com.saltclient.util.HudPos;
@@ -107,6 +108,7 @@ public final class ModuleManager {
         register(new ZoomModule());
         register(new ToggleModule("zoomscroll", "ZoomScroll", "Adjust zoom with scroll.", ModuleCategory.CAMERA));
         register(new FullBrightModule());
+        register(new MotionBlurModule());
 
         // Crosshair
         register(new CrosshairEditorModule());
