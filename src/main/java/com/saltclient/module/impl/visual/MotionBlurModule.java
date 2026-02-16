@@ -4,10 +4,13 @@ import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.setting.IntSetting;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.VertexSorter;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.util.math.MathHelper;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 /**
  * Motion blur adapted from classic framebuffer-accumulation implementations.
@@ -44,24 +47,31 @@ public final class MotionBlurModule extends Module {
 
         if (!ensureBuffers(main.textureWidth, main.textureHeight)) return;
 
-        // Compose new blurred frame:
-        // into = current + previous * alpha
-        blurBufferInto.clear(MinecraftClient.IS_SYSTEM_MAC);
-        blurBufferInto.beginWrite(true);
+        int drawWidth = mc.getWindow().getFramebufferWidth();
+        int drawHeight = mc.getWindow().getFramebufferHeight();
 
-        main.draw(main.textureWidth, main.textureHeight, true);
+        beginBlitMatrices(drawWidth, drawHeight);
+        try {
+            // Compose new blurred frame:
+            // into = current + previous * alpha
+            blurBufferInto.clear(MinecraftClient.IS_SYSTEM_MAC);
+            blurBufferInto.beginWrite(true);
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, blurAlpha());
-        blurBufferMain.draw(main.textureWidth, main.textureHeight, false);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.disableBlend();
+            main.draw(drawWidth, drawHeight, true);
 
-        // Output composed frame back to main framebuffer.
-        main.beginWrite(true);
-        blurBufferInto.draw(main.textureWidth, main.textureHeight, true);
-        main.endWrite();
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, blurAlpha());
+            blurBufferMain.draw(drawWidth, drawHeight, false);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.disableBlend();
+
+            // Output composed frame back to main framebuffer.
+            main.beginWrite(true);
+            blurBufferInto.draw(drawWidth, drawHeight, true);
+        } finally {
+            endBlitMatrices();
+        }
 
         // Swap framebuffers for next frame accumulation.
         SimpleFramebuffer tmp = blurBufferMain;
@@ -117,5 +127,24 @@ public final class MotionBlurModule extends Module {
         // Ported from the old implementation: amount/10 - 0.1
         float v = (amount.getValue() / 10.0F) - 0.1F;
         return MathHelper.clamp(v, 0.0F, 0.92F);
+    }
+
+    private static void beginBlitMatrices(int width, int height) {
+        RenderSystem.backupProjectionMatrix();
+        Matrix4f proj = new Matrix4f().setOrtho(0.0F, (float) width, (float) height, 0.0F, 1000.0F, 3000.0F);
+        RenderSystem.setProjectionMatrix(proj, VertexSorter.BY_Z);
+
+        Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        modelView.identity();
+        modelView.translate(0.0F, 0.0F, -2000.0F);
+        RenderSystem.applyModelViewMatrix();
+    }
+
+    private static void endBlitMatrices() {
+        Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.popMatrix();
+        RenderSystem.applyModelViewMatrix();
+        RenderSystem.restoreProjectionMatrix();
     }
 }
