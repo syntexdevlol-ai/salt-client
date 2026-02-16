@@ -14,3 +14,7 @@ out/
 # OS
 .DS_Store
 
+
+# Release artifacts
+/dist/*.jar
+/dist/*.zip
