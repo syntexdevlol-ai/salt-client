@@ -2,6 +2,7 @@ package com.saltclient;
 
 import com.saltclient.gui.SaltScreen;
 import com.saltclient.module.ModuleManager;
+import com.saltclient.audio.SongPlayerService;
 import com.saltclient.tweaks.MemoryTweaks;
 import com.saltclient.tweaks.OptionTweaks;
 import com.saltclient.tweaks.WorldTweaks;
@@ -48,6 +49,7 @@ public final class SaltClient implements ClientModInitializer {
             ActivityTracker.tick(client);
             InputTracker.tick(client);
             MODULES.onTick(client);
+            SongPlayerService.tick(client);
 
             OptionTweaks.tick(client);
             WorldTweaks.tick(client);

@@ -20,12 +20,19 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public final class SongPlayerService {
     private static Channel.SourceManager currentSource;
-    private static Path currentTrack;
+    private static TrackingAudioStream currentStream;
+
+    // What the user wants to play (used to auto-resume across disconnects/death).
+    private static boolean wantPlaying;
+    private static Path wantedTrack;
+
+    private static long lastAutoResumeMs;
+    private static long resumeToken;
+    private static boolean resumeInFlight;
 
     private SongPlayerService() {}
 
@@ -59,7 +66,12 @@ public final class SongPlayerService {
         if (!Files.isRegularFile(file)) return "Track file not found";
         if (!isSupported(file)) return "Only .mp3 and .ogg files are supported";
 
-        stop();
+        // This is now the "desired" track. We keep it so playback can auto-resume
+        // if vanilla stops all sounds during server changes or respawn screens.
+        wantPlaying = true;
+        wantedTrack = file;
+
+        stopCurrentSource();
 
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc == null) return "Play failed: Minecraft client not ready";
@@ -71,35 +83,62 @@ public final class SongPlayerService {
         Channel channel = ((SoundSystemAccessor) soundSystem).saltclient$getChannel();
         if (channel == null) return "Play failed: Sound channel not ready";
 
-        AudioStream stream;
+        TrackingAudioStream stream;
         try {
-            stream = openStream(file);
+            stream = new TrackingAudioStream(openStream(file));
         } catch (Exception e) {
             String msg = e.getMessage();
             if (msg == null || msg.isBlank()) msg = e.getClass().getSimpleName();
+            wantPlaying = false;
+            wantedTrack = null;
             return "Play failed: " + msg;
         }
 
         try {
-            Channel.SourceManager src = channel.createSource(SoundEngine.RunMode.STREAMING).get(2, TimeUnit.SECONDS);
-            if (src == null) {
-                stream.close();
-                return "Play failed: No available sound sources";
-            }
+            // Don't block the UI thread waiting for audio; create the source async.
+            resumeToken++;
+            long token = resumeToken;
+            resumeInFlight = true;
+            channel.createSource(SoundEngine.RunMode.STREAMING).whenComplete((src, err) -> {
+                synchronized (SongPlayerService.class) {
+                    resumeInFlight = false;
+                }
 
-            // All Source operations must happen on Minecraft's sound executor thread.
-            src.run(source -> {
-                source.setRelative(true);
-                source.disableAttenuation();
-                source.setVolume(1.0f);
-                source.setPitch(1.0f);
-                source.setLooping(false);
-                source.setStream(stream);
-                source.play();
+                if (err != null || src == null) {
+                    try {
+                        stream.close();
+                    } catch (Exception ignored) {
+                    }
+                    return;
+                }
+
+                synchronized (SongPlayerService.class) {
+                    // If a newer play/stop happened while we were creating the source, discard.
+                    if (token != resumeToken || !wantPlaying || wantedTrack == null || !wantedTrack.equals(file)) {
+                        src.run(ignored -> safeClose(src));
+                        try {
+                            stream.close();
+                        } catch (Exception ignored) {
+                        }
+                        return;
+                    }
+
+                    currentSource = src;
+                    currentStream = stream;
+                }
+
+                // All Source operations must happen on Minecraft's sound executor thread.
+                src.run(source -> {
+                    source.setRelative(true);
+                    source.disableAttenuation();
+                    source.setVolume(1.0f);
+                    source.setPitch(1.0f);
+                    source.setLooping(false);
+                    source.setStream(stream);
+                    source.play();
+                });
             });
 
-            currentSource = src;
-            currentTrack = file;
             return "Playing: " + file.getFileName();
         } catch (Exception e) {
             try {
@@ -109,40 +148,26 @@ public final class SongPlayerService {
 
             String msg = e.getMessage();
             if (msg == null || msg.isBlank()) msg = e.getClass().getSimpleName();
+            wantPlaying = false;
+            wantedTrack = null;
             return "Play failed: " + msg;
         }
     }
 
     public static synchronized void stop() {
-        if (currentSource != null) {
-            Channel.SourceManager src = currentSource;
-            currentSource = null;
-
-            // Close the source on the sound executor thread.
-            src.run(ignored -> src.close());
-        }
-        currentTrack = null;
+        wantPlaying = false;
+        wantedTrack = null;
+        stopCurrentSource();
     }
 
     public static synchronized boolean isPlaying() {
         if (currentSource == null) return false;
-        if (currentSource.isStopped()) {
-            currentSource = null;
-            currentTrack = null;
-            return false;
-        }
-        return true;
+        return !currentSource.isStopped();
     }
 
     public static synchronized Path currentTrack() {
-        // Keep UI in sync if the sound system has already stopped this source.
-        if (currentSource == null) return null;
-        if (currentSource.isStopped()) {
-            currentSource = null;
-            currentTrack = null;
-            return null;
-        }
-        return currentTrack;
+        if (!isPlaying()) return null;
+        return wantedTrack;
     }
 
     private static AudioStream openStream(Path file) throws IOException {
@@ -164,6 +189,190 @@ public final class SongPlayerService {
 
         in.close();
         throw new IOException("Unsupported audio file");
+    }
+
+    /**
+     * Called every client tick to auto-resume playback if vanilla stops all sounds
+     * (ex: disconnecting, joining servers, death/respawn flows).
+     */
+    public static void tick(MinecraftClient mc) {
+        Path track;
+        boolean shouldPlay;
+        Channel.SourceManager src;
+        TrackingAudioStream stream;
+        boolean inFlight;
+
+        synchronized (SongPlayerService.class) {
+            shouldPlay = wantPlaying;
+            track = wantedTrack;
+            src = currentSource;
+            stream = currentStream;
+            inFlight = resumeInFlight;
+        }
+
+        if (!shouldPlay || track == null || mc == null) return;
+        if (inFlight) return;
+
+        boolean stopped = (src == null) || src.isStopped();
+        if (!stopped) return;
+
+        boolean ended = stream != null && stream.isEnded();
+
+        synchronized (SongPlayerService.class) {
+            // Clear stale references.
+            currentSource = null;
+            currentStream = null;
+        }
+
+        // If the song ended naturally, don't loop.
+        if (ended) {
+            synchronized (SongPlayerService.class) {
+                wantPlaying = false;
+            }
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastAutoResumeMs < 1200L) return;
+        lastAutoResumeMs = now;
+
+        SoundManager soundManager = mc.getSoundManager();
+        SoundSystem soundSystem;
+        try {
+            soundSystem = ((SoundManagerAccessor) soundManager).saltclient$getSoundSystem();
+        } catch (Exception e) {
+            return;
+        }
+        if (soundSystem == null) return;
+
+        Channel channel;
+        try {
+            channel = ((SoundSystemAccessor) soundSystem).saltclient$getChannel();
+        } catch (Exception e) {
+            return;
+        }
+        if (channel == null) return;
+
+        TrackingAudioStream newStream;
+        try {
+            newStream = new TrackingAudioStream(openStream(track));
+        } catch (Exception e) {
+            // If we can't reopen the track, stop trying.
+            synchronized (SongPlayerService.class) {
+                wantPlaying = false;
+            }
+            return;
+        }
+
+        synchronized (SongPlayerService.class) {
+            // If user stopped or changed tracks since we started reopening, discard.
+            if (!wantPlaying || wantedTrack == null || !wantedTrack.equals(track)) {
+                try {
+                    newStream.close();
+                } catch (Exception ignored) {
+                }
+                return;
+            }
+
+            resumeToken++;
+            resumeInFlight = true;
+        }
+
+        long token;
+        synchronized (SongPlayerService.class) {
+            token = resumeToken;
+        }
+
+        channel.createSource(SoundEngine.RunMode.STREAMING).whenComplete((newSrc, err) -> {
+            synchronized (SongPlayerService.class) {
+                resumeInFlight = false;
+            }
+
+            if (err != null || newSrc == null) {
+                try {
+                    newStream.close();
+                } catch (Exception ignored) {
+                }
+                return;
+            }
+
+            synchronized (SongPlayerService.class) {
+                if (token != resumeToken || !wantPlaying || wantedTrack == null || !wantedTrack.equals(track)) {
+                    newSrc.run(ignored -> safeClose(newSrc));
+                    try {
+                        newStream.close();
+                    } catch (Exception ignored) {
+                    }
+                    return;
+                }
+
+                currentSource = newSrc;
+                currentStream = newStream;
+            }
+
+            newSrc.run(source -> {
+                source.setRelative(true);
+                source.disableAttenuation();
+                source.setVolume(1.0f);
+                source.setPitch(1.0f);
+                source.setLooping(false);
+                source.setStream(newStream);
+                source.play();
+            });
+        });
+    }
+
+    private static synchronized void stopCurrentSource() {
+        if (currentSource == null) return;
+
+        Channel.SourceManager src = currentSource;
+        currentSource = null;
+        currentStream = null;
+
+        // Close the source on the sound executor thread. Guard against double-closes.
+        src.run(ignored -> safeClose(src));
+    }
+
+    private static void safeClose(Channel.SourceManager src) {
+        if (src == null) return;
+        try {
+            if (!src.isStopped()) src.close();
+        } catch (Throwable ignored) {
+            // Never crash the sound thread.
+        }
+    }
+
+    /**
+     * Wraps an AudioStream so we can detect natural EOF vs "stopped by vanilla".
+     */
+    private static final class TrackingAudioStream implements AudioStream {
+        private final AudioStream delegate;
+        private volatile boolean ended;
+
+        TrackingAudioStream(AudioStream delegate) {
+            this.delegate = delegate;
+        }
+
+        boolean isEnded() {
+            return ended;
+        }
+
+        @Override
+        public javax.sound.sampled.AudioFormat getFormat() {
+            return delegate.getFormat();
+        }
+
+        @Override
+        public java.nio.ByteBuffer read(int size) throws IOException {
+            java.nio.ByteBuffer buf = delegate.read(size);
+            if (buf == null) ended = true;
+            return buf;
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
     }
 
     private static boolean isSupported(Path file) {
