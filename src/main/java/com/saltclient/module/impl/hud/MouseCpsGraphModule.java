@@ -54,7 +54,7 @@ public final class MouseCpsGraphModule extends Module {
         int maxCps = 20;
 
         for (int i = 0; i < graphW; i++) {
-            int sampleIdx = (index - (graphW - 1 - i) + HISTORY) % HISTORY;
+            int sampleIdx = Math.floorMod(index - (graphW - 1 - i), HISTORY);
             int l = Math.min(maxCps, left[sampleIdx]);
             int r = Math.min(maxCps, right[sampleIdx]);
 

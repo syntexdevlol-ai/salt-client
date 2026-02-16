@@ -51,7 +51,7 @@ public final class PerformanceGraphModule extends Module {
 
         int maxFps = 180;
         for (int i = 0; i < graphW; i++) {
-            int sampleIdx = (index - (graphW - 1 - i) + HISTORY) % HISTORY;
+            int sampleIdx = Math.floorMod(index - (graphW - 1 - i), HISTORY);
             int v = Math.min(maxFps, fps[sampleIdx]);
             int barH = (v * graphH) / maxFps;
             int px = graphX + i;
