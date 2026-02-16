@@ -20,6 +20,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // MP3 decoding for the in-client song player (pure Java).
+    implementation(include("javazoom:jlayer:1.0.1"))
 }
 
 processResources {
@@ -49,4 +52,3 @@ jar {
         rename { "${it}_${project.archivesBaseName}" }
     }
 }
-
