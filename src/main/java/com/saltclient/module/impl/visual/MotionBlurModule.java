@@ -1,121 +1,121 @@
 package com.saltclient.module.impl.visual;
 
-import com.saltclient.mixin.GameRendererInvoker;
 import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.setting.IntSetting;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.PostEffectProcessor;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Motion blur tuned for PvP:
- * - Uses a lighter custom blur shader.
- * - Enables only briefly when camera rotates.
+ * Motion blur adapted from classic framebuffer-accumulation implementations.
+ *
+ * This matches the behavior from older Forge clients:
+ * - Each frame is blended with the previous blurred frame.
+ * - Amount controls trailing strength.
  */
 public final class MotionBlurModule extends Module {
-    private static final int HOLD_TICKS = 3;
-    private static final float TURN_THRESHOLD = 0.35F;
-
-    private final IntSetting strength;
-
-    private PostEffectProcessor appliedProcessor;
-    private boolean hasLastAngles;
-    private float lastYaw;
-    private float lastPitch;
-    private int activeTicks;
-    private int lastStrength;
+    private final IntSetting amount;
+    private SimpleFramebuffer blurBufferMain;
+    private SimpleFramebuffer blurBufferInto;
+    private int bufferWidth = -1;
+    private int bufferHeight = -1;
 
     public MotionBlurModule() {
-        super("motionblur", "MotionBlur", "Adds a subtle motion blur effect.", ModuleCategory.VISUAL, true);
-        this.strength = addSetting(new IntSetting("strength", "Strength", "Motion blur intensity (1-5).", 3, 1, 5, 1));
+        super("motionblur", "MotionBlur", "Adds smooth camera motion blur.", ModuleCategory.VISUAL, true);
+        this.amount = addSetting(new IntSetting("amount", "Amount", "Higher = stronger blur trail.", 7, 2, 10, 1));
     }
 
     @Override
     protected void onEnable(MinecraftClient mc) {
-        activeTicks = 0;
-        hasLastAngles = false;
-        lastStrength = strength.getValue();
+        releaseBuffers();
     }
 
     @Override
-    public void onTick(MinecraftClient mc) {
-        if (mc == null || mc.gameRenderer == null) return;
+    public void onHudRender(net.minecraft.client.gui.DrawContext ctx) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc == null || mc.player == null) return;
+        if (mc.currentScreen != null) return;
 
-        if (mc.player != null) {
-            float yaw = mc.player.getYaw();
-            float pitch = mc.player.getPitch();
+        Framebuffer main = mc.getFramebuffer();
+        if (main == null || main.textureWidth <= 0 || main.textureHeight <= 0) return;
 
-            if (hasLastAngles) {
-                float yawDelta = Math.abs(MathHelper.wrapDegrees(yaw - lastYaw));
-                float pitchDelta = Math.abs(MathHelper.wrapDegrees(pitch - lastPitch));
-                float turnDelta = yawDelta + (pitchDelta * 0.8F);
-                if (turnDelta > TURN_THRESHOLD) {
-                    activeTicks = HOLD_TICKS;
-                }
-            } else {
-                hasLastAngles = true;
-            }
+        if (!ensureBuffers(main.textureWidth, main.textureHeight)) return;
 
-            lastYaw = yaw;
-            lastPitch = pitch;
-        }
+        // Compose new blurred frame:
+        // into = current + previous * alpha
+        blurBufferInto.clear(MinecraftClient.IS_SYSTEM_MAC);
+        blurBufferInto.beginWrite(true);
 
-        if (appliedProcessor != null && mc.gameRenderer.getPostProcessor() != appliedProcessor) {
-            appliedProcessor = null;
-        }
+        main.draw(main.textureWidth, main.textureHeight, true);
 
-        int currentStrength = strength.getValue();
-        if (currentStrength != lastStrength) {
-            lastStrength = currentStrength;
-            // Rebuild post effect so new strength preset is applied.
-            disableIfOwned(mc);
-        }
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, blurAlpha());
+        blurBufferMain.draw(main.textureWidth, main.textureHeight, false);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
 
-        boolean shouldBlur = mc.currentScreen == null && activeTicks > 0;
-        if (shouldBlur) {
-            if (appliedProcessor == null && mc.gameRenderer.getPostProcessor() == null) {
-                tryApply(mc);
-            }
-        } else {
-            disableIfOwned(mc);
-        }
+        // Output composed frame back to main framebuffer.
+        main.beginWrite(true);
+        blurBufferInto.draw(main.textureWidth, main.textureHeight, true);
+        main.endWrite();
 
-        if (activeTicks > 0) {
-            activeTicks--;
-        }
+        // Swap framebuffers for next frame accumulation.
+        SimpleFramebuffer tmp = blurBufferMain;
+        blurBufferMain = blurBufferInto;
+        blurBufferInto = tmp;
     }
 
     @Override
     protected void onDisable(MinecraftClient mc) {
-        disableIfOwned(mc);
-        hasLastAngles = false;
-        activeTicks = 0;
+        releaseBuffers();
     }
 
-    private void tryApply(MinecraftClient mc) {
-        if (mc == null || mc.gameRenderer == null) return;
-        if (mc.gameRenderer.getPostProcessor() != null) return;
+    private boolean ensureBuffers(int width, int height) {
+        if (blurBufferMain != null && blurBufferInto != null && width == bufferWidth && height == bufferHeight) {
+            return true;
+        }
 
         try {
-            ((GameRendererInvoker) mc.gameRenderer).saltclient$loadPostProcessor(shaderForStrength(strength.getValue()));
-            appliedProcessor = mc.gameRenderer.getPostProcessor();
+            releaseBuffers();
+            blurBufferMain = createBuffer(width, height);
+            blurBufferInto = createBuffer(width, height);
+            bufferWidth = width;
+            bufferHeight = height;
+            return true;
         } catch (Throwable ignored) {
-            // Keep this fail-safe: if loading fails on a specific device, the module simply does nothing.
-            appliedProcessor = null;
+            releaseBuffers();
+            return false;
         }
     }
 
-    private static Identifier shaderForStrength(int strength) {
-        int s = MathHelper.clamp(strength, 1, 5);
-        return Identifier.of("saltclient", "shaders/post/motion_blur_" + s + ".json");
+    private static SimpleFramebuffer createBuffer(int width, int height) {
+        SimpleFramebuffer buffer = new SimpleFramebuffer(width, height, true, MinecraftClient.IS_SYSTEM_MAC);
+        buffer.setTexFilter(9728); // GL_NEAREST
+        buffer.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
+        buffer.clear(MinecraftClient.IS_SYSTEM_MAC);
+        return buffer;
     }
 
-    private void disableIfOwned(MinecraftClient mc) {
-        if (mc != null && mc.gameRenderer != null && appliedProcessor != null && mc.gameRenderer.getPostProcessor() == appliedProcessor) {
-            mc.gameRenderer.disablePostProcessor();
+    private void releaseBuffers() {
+        if (blurBufferMain != null) {
+            blurBufferMain.delete();
+            blurBufferMain = null;
         }
-        appliedProcessor = null;
+        if (blurBufferInto != null) {
+            blurBufferInto.delete();
+            blurBufferInto = null;
+        }
+        bufferWidth = -1;
+        bufferHeight = -1;
+    }
+
+    private float blurAlpha() {
+        // Ported from the old implementation: amount/10 - 0.1
+        float v = (amount.getValue() / 10.0F) - 0.1F;
+        return MathHelper.clamp(v, 0.0F, 0.92F);
     }
 }
