@@ -1,6 +1,7 @@
 {
+  "category.saltclient": "Salt Client",
+  "key.saltclient.freelook": "FreeLook (Hold)",
   "key.saltclient.open_menu": "Open Salt Menu",
-  "key.saltclient.zoom": "Zoom",
   "key.saltclient.perspective": "Perspective (Hold)",
-  "key.saltclient.freelook": "FreeLook (Hold)"
+  "key.saltclient.zoom": "Zoom"
 }

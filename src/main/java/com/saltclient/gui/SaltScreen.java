@@ -5,6 +5,7 @@ import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.util.GuiSettings;
 import com.saltclient.util.HudPos;
+import com.saltclient.util.UiFonts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -56,6 +57,8 @@ public final class SaltScreen extends Screen {
     private static final int ACTION_SIZE = 22;
     private static final int ACTION_GAP = 6;
 
+    private static final int ACTION_COUNT = 5;
+
     private static final int POSITIVE = 0xFF8DE39F;
     private static final int NEGATIVE = 0xFFFF8A8A;
 
@@ -81,7 +84,7 @@ public final class SaltScreen extends Screen {
     private String lastConfigClicked = "";
 
     public SaltScreen() {
-        super(Text.literal("saltclient"));
+        super(UiFonts.text("saltclient"));
     }
 
     private static final class Layout {
@@ -176,7 +179,7 @@ public final class SaltScreen extends Screen {
         int headerPad = 12;
         int brandW = 220;
 
-        int actionTotalW = (ACTION_SIZE * 3) + (ACTION_GAP * 2);
+        int actionTotalW = (ACTION_SIZE * ACTION_COUNT) + (ACTION_GAP * (ACTION_COUNT - 1));
         l.actionX = l.panelX + l.panelW - headerPad - actionTotalW;
         l.actionY = l.panelY + (l.headerH - ACTION_SIZE) / 2;
 
@@ -358,12 +361,12 @@ public final class SaltScreen extends Screen {
         ctx.drawBorder(l.searchX, l.searchY, l.searchW, l.searchH, scaleAlpha(SEARCH_BORDER, alpha));
 
         if (configTab) {
-            ctx.drawTextWithShadow(this.textRenderer, Text.literal("Config section"), l.searchX + 12, l.searchY + 10, scaleAlpha(MUTED, alpha));
+            ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Config section"), l.searchX + 12, l.searchY + 10, scaleAlpha(MUTED, alpha));
         } else {
-            ctx.drawTextWithShadow(this.textRenderer, Text.literal("?"), l.searchX + 9, l.searchY + 9, scaleAlpha(MUTED, alpha));
+            ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("?"), l.searchX + 9, l.searchY + 9, scaleAlpha(MUTED, alpha));
         }
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < ACTION_COUNT; i++) {
             int bx = l.actionX + i * (ACTION_SIZE + ACTION_GAP);
             int by = l.actionY;
             boolean hover = inside(mouseX, mouseY, bx, by, ACTION_SIZE, ACTION_SIZE);
@@ -371,7 +374,13 @@ public final class SaltScreen extends Screen {
             ctx.fill(bx, by, bx + ACTION_SIZE, by + ACTION_SIZE, scaleAlpha(fill, alpha));
             ctx.drawBorder(bx, by, ACTION_SIZE, ACTION_SIZE, scaleAlpha(0xFF4A5C88, alpha));
 
-            String glyph = (i == 0) ? "<" : (i == 1 ? "*" : "U");
+            String glyph = switch (i) {
+                case 0 -> "<"; // back
+                case 1 -> "I"; // installers
+                case 2 -> "M"; // music
+                case 3 -> "*"; // misc
+                default -> "U"; // user
+            };
             int gx = bx + (ACTION_SIZE - this.textRenderer.getWidth(glyph)) / 2;
             int gy = by + (ACTION_SIZE - this.textRenderer.fontHeight) / 2;
             ctx.drawTextWithShadow(this.textRenderer, Text.literal(glyph), gx, gy, scaleAlpha(TEXT, alpha));
@@ -625,8 +634,27 @@ public final class SaltScreen extends Screen {
             if (configPath != null && configPath.mouseClicked(mouseX, mouseY, button)) return true;
         }
 
-        if (inside(mouseX, mouseY, l.actionX, l.actionY, ACTION_SIZE, ACTION_SIZE)) {
-            this.close();
+        // Header action buttons
+        for (int i = 0; i < ACTION_COUNT; i++) {
+            int bx = l.actionX + i * (ACTION_SIZE + ACTION_GAP);
+            int by = l.actionY;
+            if (!inside(mouseX, mouseY, bx, by, ACTION_SIZE, ACTION_SIZE)) continue;
+
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (i == 0) {
+                this.close();
+            } else if (i == 1) {
+                if (mc != null) mc.setScreen(new InstallerScreen(this));
+            } else if (i == 2) {
+                if (mc != null) mc.setScreen(new SongPlayerScreen(this));
+            } else if (i == 3) {
+                // Toggle Config tab
+                configTab = !configTab;
+                if (configTab) setInitialFocus(configName);
+                else setInitialFocus(search);
+            } else {
+                // Reserved / future
+            }
             return true;
         }
 

@@ -10,6 +10,8 @@ import com.saltclient.module.impl.movement.AutoSprintModule;
 import com.saltclient.module.impl.movement.InventoryWalkModule;
 import com.saltclient.module.impl.misc.AutoRespawnModule;
 import com.saltclient.module.impl.misc.GuiModule;
+import com.saltclient.module.impl.misc.FontSelectorModule;
+import com.saltclient.module.impl.misc.AsmrKeyboardModule;
 import com.saltclient.module.impl.misc.ReplayIndicatorModule;
 import com.saltclient.module.impl.misc.ScreenshotHelperModule;
 import com.saltclient.module.impl.performance.FontRendererModule;
@@ -117,6 +119,7 @@ public final class ModuleManager {
         register(new ToggleModule("hudsnapgrid", "HUDSnapGrid", "Snap HUD editor movement to a grid (planned).", ModuleCategory.HUD));
         register(new ToggleModule("minimalhud", "MinimalHUD", "Simplify vanilla HUD.", ModuleCategory.HUD));
         register(new ToggleModule("cleanhud", "CleanHUD", "Hide vanilla HUD.", ModuleCategory.HUD));
+        register(new HudScaleModule());
         register(new HudEditorModule());
 
         // Chat
@@ -126,6 +129,8 @@ public final class ModuleManager {
 
         // Misc
         register(new GuiModule());
+        register(new FontSelectorModule());
+        register(new AsmrKeyboardModule());
         register(new AutoRespawnModule());
         register(new ToggleModule("serverswitcher", "ServerSwitcher", "Quick switch between saved servers (planned).", ModuleCategory.MISC));
         register(new ToggleModule("serverautoreconnect", "ServerAutoReconnect", "Auto reconnect after disconnect (planned).", ModuleCategory.MISC));
@@ -141,7 +146,6 @@ public final class ModuleManager {
         register(new ToggleModule("configversioning", "ConfigVersioning", "Keep historical config snapshots (planned).", ModuleCategory.MISC));
         register(new ToggleModule("themeswitcher", "ThemeSwitcher", "Switch UI themes (planned).", ModuleCategory.MISC));
         register(new ToggleModule("accentcolorpicker", "AccentColorPicker", "Pick GUI accent color (planned).", ModuleCategory.MISC));
-        register(new ToggleModule("fontselector", "FontSelector", "Switch HUD/UI font style (planned).", ModuleCategory.MISC));
         register(new ToggleModule("uiscale", "UIScale", "Adjust custom UI scale (planned).", ModuleCategory.MISC));
         register(new ToggleModule("draganddropui", "DragAndDropUI", "Drag and drop UI widgets (planned).", ModuleCategory.MISC));
         register(new ScreenshotHelperModule());

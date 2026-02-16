@@ -9,19 +9,66 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
 public final class CustomCrosshairModule extends Module {
+    private final IntSetting preset;
     private final IntSetting size;
     private final IntSetting gap;
     private final IntSetting thickness;
     private final BoolSetting dot;
     private final EnumSetting<CrosshairColor> color;
 
+    private int lastPreset = -1;
+
     public CustomCrosshairModule() {
-        super("customcrosshair", "CustomCrosshair", "Render a configurable custom crosshair.", ModuleCategory.CROSSHAIR, true);
+        super("customcrosshair", "CustomCrosshair", "Render a configurable custom crosshair with preset library.", ModuleCategory.CROSSHAIR, true);
+        this.preset = addSetting(new IntSetting("preset", "Preset", "Crosshair preset index (0-599).", 0, 0, Math.max(0, CrosshairPresetLibrary.size() - 1), 1));
         this.size = addSetting(new IntSetting("size", "Size", "Crosshair line size.", 6, 2, 20, 1));
         this.gap = addSetting(new IntSetting("gap", "Gap", "Gap between lines.", 3, 0, 15, 1));
         this.thickness = addSetting(new IntSetting("thickness", "Thickness", "Line thickness.", 2, 1, 6, 1));
         this.dot = addSetting(new BoolSetting("dot", "Dot", "Center dot.", false));
         this.color = addSetting(new EnumSetting<>("color", "Color", "Crosshair color preset.", CrosshairColor.WHITE, CrosshairColor.values()));
+
+        applyPreset(this.preset.getValue());
+    }
+
+    public int presetCount() {
+        return CrosshairPresetLibrary.size();
+    }
+
+    public String presetName() {
+        return CrosshairPresetLibrary.get(preset.getValue()).name();
+    }
+
+    public void nextPreset() {
+        int count = presetCount();
+        if (count <= 0) return;
+        int next = (preset.getValue() + 1) % count;
+        applyPreset(next);
+    }
+
+    public void prevPreset() {
+        int count = presetCount();
+        if (count <= 0) return;
+        int next = Math.floorMod(preset.getValue() - 1, count);
+        applyPreset(next);
+    }
+
+    public void applyPreset(int index) {
+        CrosshairPresetLibrary.Preset p = CrosshairPresetLibrary.get(index);
+        this.preset.setValue(Math.floorMod(index, Math.max(1, presetCount())));
+        this.size.setValue(p.size());
+        this.gap.setValue(p.gap());
+        this.thickness.setValue(p.thickness());
+        this.dot.setValue(p.dot());
+        this.color.setValue(p.color());
+        this.lastPreset = this.preset.getValue();
+    }
+
+    @Override
+    public void onTick(MinecraftClient mc) {
+        int current = preset.getValue();
+        if (current != lastPreset) {
+            applyPreset(current);
+        }
     }
 
     @Override
