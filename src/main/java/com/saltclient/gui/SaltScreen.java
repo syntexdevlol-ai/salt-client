@@ -3,10 +3,12 @@ package com.saltclient.gui;
 import com.saltclient.SaltClient;
 import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
+import com.saltclient.util.HudPos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
@@ -14,172 +16,368 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Basic "client menu" inspired by the reference screenshot.
- *
- * Notes:
- * - No fancy rounded corners (kept simple / stable).
- * - Manual list rendering with scrolling.
+ * Main Salt menu inspired by the reference UI.
  */
 public final class SaltScreen extends Screen {
-    private static final int BG = 0xD90B1018;
-    private static final int PANEL = 0xE0131A27;
-    private static final int PANEL_BORDER = 0xFF23324A;
-    private static final int ROW = 0xFF172133;
-    private static final int ROW_HOVER = 0xFF1E2B41;
-    private static final int ROW_DISABLED = 0xFF101827;
-    private static final int TEXT = 0xFFE6EBFA;
-    private static final int MUTED = 0xFF8EA1C8;
-    private static final int TOGGLE_ON = 0xFF7BC96F;
-    private static final int TOGGLE_OFF = 0xFF3C495F;
+    private static final int BG = 0xA8060A14;
+    private static final int PANEL = 0xE0101626;
+    private static final int PANEL_BORDER = 0xFF2A3553;
+
+    private static final int HEADER = 0xCC1A2034;
+    private static final int SIDEBAR = 0xB2161C2E;
+    private static final int FOOTER = 0xCC13192B;
+
+    private static final int SEARCH_BG = 0x99232B43;
+    private static final int SEARCH_BORDER = 0xFF344266;
+
+    private static final int SIDEBAR_ROW = 0x4427314B;
+    private static final int SIDEBAR_ROW_HOVER = 0x66303C59;
+    private static final int SIDEBAR_ROW_ACTIVE = 0xAA36508A;
+    private static final int SIDEBAR_ACCENT = 0xFF4DA0FF;
+
+    private static final int CARD = 0xAA1C2438;
+    private static final int CARD_HOVER = 0xCC22304B;
+    private static final int CARD_BORDER = 0xFF2B3959;
+    private static final int CARD_DISABLED = 0xAA141C2B;
+
+    private static final int TEXT = 0xFFE9EEFF;
+    private static final int MUTED = 0xFFA1AFD4;
+    private static final int SUBTLE = 0xFF7F8DB1;
+
+    private static final int TOGGLE_ON = 0xFF4DA0FF;
+    private static final int TOGGLE_OFF = 0xFF42506D;
+
+    private static final int HEADER_BUTTON = 0xAA303B59;
+    private static final int HEADER_BUTTON_HOVER = 0xCC3A496B;
+
+    private static final int ACTION_BTN = 0xAA2A334D;
+    private static final int ACTION_BTN_HOVER = 0xCC364463;
+
+    private static final int ACTION_SIZE = 22;
+    private static final int ACTION_GAP = 6;
 
     private TextFieldWidget search;
     private ModuleCategory selected = ModuleCategory.ALL;
     private double scroll;
 
     public SaltScreen() {
-        super(Text.literal("Salt Client"));
+        super(Text.literal("saltclient"));
+    }
+
+    private static final class Layout {
+        int panelX;
+        int panelY;
+        int panelW;
+        int panelH;
+
+        int headerH;
+        int footerH;
+
+        int searchX;
+        int searchY;
+        int searchW;
+        int searchH;
+
+        int actionX;
+        int actionY;
+
+        int contentY;
+        int contentH;
+
+        int sidebarX;
+        int sidebarY;
+        int sidebarW;
+        int sidebarH;
+
+        int listX;
+        int listY;
+        int listW;
+        int listH;
+
+        int footerY;
+
+        int resetX;
+        int resetY;
+        int resetW;
+        int resetH;
+
+        int editX;
+        int editY;
+        int editW;
+        int editH;
+    }
+
+    private Layout layout() {
+        Layout l = new Layout();
+
+        l.panelW = Math.min(this.width - 36, 1000);
+        l.panelH = Math.min(this.height - 36, 560);
+        l.panelX = (this.width - l.panelW) / 2;
+        l.panelY = (this.height - l.panelH) / 2;
+
+        l.headerH = 56;
+        l.footerH = 40;
+
+        int headerPad = 12;
+        int brandW = 220;
+
+        int actionTotalW = (ACTION_SIZE * 3) + (ACTION_GAP * 2);
+        l.actionX = l.panelX + l.panelW - headerPad - actionTotalW;
+        l.actionY = l.panelY + (l.headerH - ACTION_SIZE) / 2;
+
+        l.searchX = l.panelX + brandW + 8;
+        l.searchY = l.panelY + 14;
+        l.searchH = 28;
+        l.searchW = l.actionX - 10 - l.searchX;
+
+        l.contentY = l.panelY + l.headerH + 8;
+        l.footerY = l.panelY + l.panelH - l.footerH;
+        l.contentH = l.footerY - l.contentY - 8;
+
+        l.sidebarX = l.panelX + 10;
+        l.sidebarY = l.contentY;
+        l.sidebarW = Math.min(250, Math.max(190, l.panelW / 4));
+        l.sidebarH = l.contentH;
+
+        l.listX = l.sidebarX + l.sidebarW + 10;
+        l.listY = l.contentY;
+        l.listW = l.panelX + l.panelW - 10 - l.listX;
+        l.listH = l.contentH;
+
+        int actionGap = 6;
+        int actionPad = 8;
+        int actionW = (l.sidebarW - actionPad * 2 - actionGap) / 2;
+        int actionH = 18;
+
+        l.resetX = l.sidebarX + actionPad;
+        l.resetY = l.footerY + (l.footerH - actionH) / 2;
+        l.resetW = actionW;
+        l.resetH = actionH;
+
+        l.editX = l.resetX + actionW + actionGap;
+        l.editY = l.resetY;
+        l.editW = actionW;
+        l.editH = actionH;
+
+        return l;
     }
 
     @Override
     protected void init() {
-        int panelW = Math.min(this.width - 40, 820);
-        int panelH = Math.min(this.height - 40, 460);
-        int panelX = (this.width - panelW) / 2;
-        int panelY = (this.height - panelH) / 2;
+        Layout l = layout();
 
-        // Search field (top bar)
         this.search = new TextFieldWidget(
             this.textRenderer,
-            panelX + 12,
-            panelY + 10,
-            panelW - 24,
-            18,
+            l.searchX + 26,
+            l.searchY + 6,
+            l.searchW - 34,
+            16,
             Text.literal("Search...")
         );
         this.search.setMaxLength(64);
-        // Add as drawable so we can let Screen render it (without calling Screen#renderBackground).
+        this.search.setDrawsBackground(false);
+        this.search.setEditableColor(TEXT);
+        this.search.setUneditableColor(MUTED);
         this.addDrawableChild(this.search);
         this.setInitialFocus(this.search);
     }
 
     @Override
     public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        // IMPORTANT: we intentionally skip vanilla's renderBackground(), because it calls GameRenderer#renderBlur.
-        // Pojav users often want no blur, and it can be expensive.
+        // Intentionally skip vanilla blur.
     }
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        int panelW = Math.min(this.width - 40, 820);
-        int panelH = Math.min(this.height - 40, 460);
-        int panelX = (this.width - panelW) / 2;
-        int panelY = (this.height - panelH) / 2;
+        Layout l = layout();
 
-        // Dim background
         ctx.fill(0, 0, this.width, this.height, BG);
 
-        // Panel
-        ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL);
-        ctx.drawBorder(panelX, panelY, panelW, panelH, PANEL_BORDER);
+        // Main shell
+        ctx.fill(l.panelX, l.panelY, l.panelX + l.panelW, l.panelY + l.panelH, PANEL);
+        ctx.drawBorder(l.panelX, l.panelY, l.panelW, l.panelH, PANEL_BORDER);
 
-        // Title
-        ctx.drawTextWithShadow(this.textRenderer, this.title, panelX + 12, panelY + 10 + 22, TEXT);
+        // Header / content / footer sections
+        ctx.fill(l.panelX, l.panelY, l.panelX + l.panelW, l.panelY + l.headerH, HEADER);
+        ctx.fill(l.sidebarX, l.sidebarY, l.sidebarX + l.sidebarW, l.sidebarY + l.sidebarH, SIDEBAR);
+        ctx.fill(l.panelX, l.footerY, l.panelX + l.panelW, l.panelY + l.panelH, FOOTER);
 
-        // Layout
-        int topBarH = 54;
-        int catW = 140;
-        int innerX = panelX + 12;
-        int innerY = panelY + topBarH;
-        int innerW = panelW - 24;
-        int innerH = panelH - topBarH - 12;
+        // Section separators
+        ctx.fill(l.panelX, l.panelY + l.headerH, l.panelX + l.panelW, l.panelY + l.headerH + 1, 0x55384A73);
+        ctx.fill(l.sidebarX + l.sidebarW + 5, l.contentY, l.sidebarX + l.sidebarW + 6, l.footerY - 2, 0x33384A73);
+        ctx.fill(l.panelX, l.footerY - 1, l.panelX + l.panelW, l.footerY, 0x55384A73);
 
-        // Category list
-        int catX = innerX;
-        int catY = innerY;
-        int catH = innerH;
-
-        // Module area
-        int listX = innerX + catW + 10;
-        int listY = innerY;
-        int listW = innerW - catW - 10;
-        int listH = innerH;
-
-        renderCategories(ctx, mouseX, mouseY, catX, catY, catW, catH);
-        renderModules(ctx, mouseX, mouseY, listX, listY, listW, listH);
+        renderHeader(ctx, mouseX, mouseY, l);
+        renderSidebar(ctx, mouseX, mouseY, l);
+        renderModules(ctx, mouseX, mouseY, l);
+        renderFooter(ctx, mouseX, mouseY, l);
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void renderCategories(DrawContext ctx, int mouseX, int mouseY, int x, int y, int w, int h) {
-        int rowH = 18;
-        int yy = y;
-        for (ModuleCategory c : ModuleCategory.values()) {
-            int bg = (c == selected) ? ROW_HOVER : ROW;
-            boolean hover = mouseX >= x && mouseX < x + w && mouseY >= yy && mouseY < yy + rowH;
-            if (hover && c != selected) bg = ROW_HOVER;
+    private void renderHeader(DrawContext ctx, int mouseX, int mouseY, Layout l) {
+        // Brand
+        ctx.fill(l.panelX + 14, l.panelY + 14, l.panelX + 46, l.panelY + 46, 0x9942537B);
+        ctx.drawBorder(l.panelX + 14, l.panelY + 14, 32, 32, 0xFF566A97);
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("S"), l.panelX + 27, l.panelY + 25, TEXT);
+        ctx.drawTextWithShadow(this.textRenderer, this.title, l.panelX + 54, l.panelY + 22, TEXT);
 
-            ctx.fill(x, yy, x + w, yy + rowH, bg);
-            ctx.drawTextWithShadow(this.textRenderer, Text.literal(c.name()), x + 6, yy + 5, TEXT);
-            yy += rowH + 4;
-            if (yy > y + h - rowH) break;
+        // Search
+        ctx.fill(l.searchX, l.searchY, l.searchX + l.searchW, l.searchY + l.searchH, SEARCH_BG);
+        ctx.drawBorder(l.searchX, l.searchY, l.searchW, l.searchH, SEARCH_BORDER);
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("?"), l.searchX + 9, l.searchY + 9, MUTED);
+
+        // Header action buttons (visual)
+        for (int i = 0; i < 3; i++) {
+            int bx = l.actionX + i * (ACTION_SIZE + ACTION_GAP);
+            int by = l.actionY;
+            boolean hover = inside(mouseX, mouseY, bx, by, ACTION_SIZE, ACTION_SIZE);
+            ctx.fill(bx, by, bx + ACTION_SIZE, by + ACTION_SIZE, hover ? HEADER_BUTTON_HOVER : HEADER_BUTTON);
+            ctx.drawBorder(bx, by, ACTION_SIZE, ACTION_SIZE, 0xFF4A5C88);
+
+            String glyph = (i == 0) ? "<" : (i == 1 ? "*" : "U");
+            int gx = bx + (ACTION_SIZE - this.textRenderer.getWidth(glyph)) / 2;
+            int gy = by + (ACTION_SIZE - this.textRenderer.fontHeight) / 2;
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(glyph), gx, gy, TEXT);
         }
     }
 
-    private void renderModules(DrawContext ctx, int mouseX, int mouseY, int x, int y, int w, int h) {
+    private void renderSidebar(DrawContext ctx, int mouseX, int mouseY, Layout l) {
+        int rowH = 30;
+        int gap = 6;
+        int y = l.sidebarY + 10;
+
+        ModuleCategory[] cats = ModuleCategory.values();
+        for (ModuleCategory c : cats) {
+            int x = l.sidebarX + 8;
+            int w = l.sidebarW - 16;
+            boolean hover = inside(mouseX, mouseY, x, y, w, rowH);
+            boolean active = c == selected;
+
+            int bg = active ? SIDEBAR_ROW_ACTIVE : (hover ? SIDEBAR_ROW_HOVER : SIDEBAR_ROW);
+            ctx.fill(x, y, x + w, y + rowH, bg);
+            if (active) {
+                ctx.fill(x, y, x + 3, y + rowH, SIDEBAR_ACCENT);
+            }
+
+            String label = categoryName(c);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(label), x + 12, y + 10, TEXT);
+            if (c != ModuleCategory.ALL) {
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal(">"), x + w - 12, y + 10, SUBTLE);
+            }
+
+            y += rowH + gap;
+            if (y > l.sidebarY + l.sidebarH - rowH - 4) break;
+        }
+    }
+
+    private void renderModules(DrawContext ctx, int mouseX, int mouseY, Layout l) {
         List<Module> list = filteredModules();
 
-        int cols = (w >= 520) ? 2 : 1;
+        int cols = (l.listW >= 640) ? 2 : 1;
         int gap = 8;
-        int rowH = 22;
-        int colW = (w - (cols - 1) * gap) / cols;
+        int cardH = 64;
+        int colW = (l.listW - (cols - 1) * gap) / cols;
 
         int rows = (int) Math.ceil(list.size() / (double) cols);
-        int contentH = rows * (rowH + gap);
-        int maxScroll = Math.max(0, contentH - h);
+        int contentH = Math.max(0, rows * (cardH + gap) - gap);
+        int maxScroll = Math.max(0, contentH - l.listH);
         scroll = clamp(scroll, 0, maxScroll);
 
-        // Clip list area (simple manual clipping by draw bounds checks)
-        int startY = y - (int) scroll;
+        int startY = l.listY - (int) scroll;
 
         for (int i = 0; i < list.size(); i++) {
             Module m = list.get(i);
 
             int row = i / cols;
             int col = i % cols;
-            int xx = x + col * (colW + gap);
-            int yy = startY + row * (rowH + gap);
+            int x = l.listX + col * (colW + gap);
+            int y = startY + row * (cardH + gap);
 
-            if (yy + rowH < y || yy > y + h) continue;
+            if (y + cardH < l.listY || y > l.listY + l.listH) continue;
 
-            boolean hover = mouseX >= xx && mouseX < xx + colW && mouseY >= yy && mouseY < yy + rowH;
-            int bg = hover ? ROW_HOVER : ROW;
-            if (!m.isImplemented()) bg = hover ? ROW_DISABLED : ROW_DISABLED;
+            boolean hover = inside(mouseX, mouseY, x, y, colW, cardH);
+            int bg = m.isImplemented() ? (hover ? CARD_HOVER : CARD) : CARD_DISABLED;
 
-            ctx.fill(xx, yy, xx + colW, yy + rowH, bg);
+            ctx.fill(x, y, x + colW, y + cardH, bg);
+            ctx.drawBorder(x, y, colW, cardH, CARD_BORDER);
 
-            // Name
-            ctx.drawTextWithShadow(this.textRenderer, Text.literal(m.getName()), xx + 8, yy + 7, TEXT);
+            String title = m.getName();
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(title), x + 10, y + 10, TEXT);
 
-            // WIP label
-            if (!m.isImplemented()) {
-                String tag = "WIP";
-                int tagW = this.textRenderer.getWidth(tag);
-                ctx.drawTextWithShadow(this.textRenderer, Text.literal(tag), xx + colW - 54 - tagW - 6, yy + 7, MUTED);
-            }
+            String desc = m.getDescription() == null ? "" : m.getDescription();
+            String shortDesc = trimToWidth(desc, colW - 86);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(shortDesc), x + 10, y + 28, MUTED);
 
             // Toggle
-            int toggleW = 42;
-            int toggleH = 14;
-            int tx = xx + colW - toggleW - 8;
-            int ty = yy + (rowH - toggleH) / 2;
-            int tbg = m.isEnabled() ? TOGGLE_ON : TOGGLE_OFF;
-            ctx.fill(tx, ty, tx + toggleW, ty + toggleH, tbg);
+            int tw = 48;
+            int th = 18;
+            int tx = x + colW - tw - 10;
+            int ty = y + 9;
+            ctx.fill(tx, ty, tx + tw, ty + th, m.isEnabled() ? TOGGLE_ON : TOGGLE_OFF);
+            ctx.drawBorder(tx, ty, tw, th, 0xFF45587C);
 
-            // Toggle knob
-            int knob = 12;
-            int kx = m.isEnabled() ? (tx + toggleW - knob - 1) : (tx + 1);
-            ctx.fill(kx, ty + 1, kx + knob, ty + toggleH - 1, 0xFF0E121A);
+            int knob = 14;
+            int kx = m.isEnabled() ? tx + tw - knob - 2 : tx + 2;
+            int ky = ty + 2;
+            ctx.fill(kx, ky, kx + knob, ky + knob, 0xFFE7ECFF);
+
+            if (!m.isImplemented()) {
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("WIP"), x + colW - 36, y + 32, SUBTLE);
+            } else if (m.hasSettings()) {
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("*"), x + colW - 12, y + 32, SUBTLE);
+            }
         }
+    }
+
+    private void renderFooter(DrawContext ctx, int mouseX, int mouseY, Layout l) {
+        // Action buttons (left)
+        boolean hoverReset = inside(mouseX, mouseY, l.resetX, l.resetY, l.resetW, l.resetH);
+        boolean hoverEdit = inside(mouseX, mouseY, l.editX, l.editY, l.editW, l.editH);
+
+        ctx.fill(l.resetX, l.resetY, l.resetX + l.resetW, l.resetY + l.resetH, hoverReset ? ACTION_BTN_HOVER : ACTION_BTN);
+        ctx.fill(l.editX, l.editY, l.editX + l.editW, l.editY + l.editH, hoverEdit ? ACTION_BTN_HOVER : ACTION_BTN);
+        ctx.drawBorder(l.resetX, l.resetY, l.resetW, l.resetH, 0xFF4A5D86);
+        ctx.drawBorder(l.editX, l.editY, l.editW, l.editH, 0xFF4A5D86);
+
+        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("RESET GUI"), l.resetX + l.resetW / 2, l.resetY + 5, TEXT);
+        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("EDIT HUD"), l.editX + l.editW / 2, l.editY + 5, TEXT);
+
+        // Footer text
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("saltclient  AL v1.0.0   Java 21  Fabric"), l.panelX + 10, l.footerY + 28, MUTED);
+
+        String right = statusText();
+        int rightX = l.panelX + l.panelW - 10 - this.textRenderer.getWidth(right);
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(right), rightX, l.footerY + 28, TEXT);
+    }
+
+    private String statusText() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        int fps = mc == null ? 0 : mc.getCurrentFps();
+
+        int ping = -1;
+        if (mc != null && mc.player != null && mc.getNetworkHandler() != null) {
+            PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            if (entry != null) ping = entry.getLatency();
+        }
+
+        if (ping >= 0) return fps + " FPS   " + ping + "ms";
+        return fps + " FPS";
+    }
+
+    private static String categoryName(ModuleCategory c) {
+        return switch (c) {
+            case ALL -> "Mods";
+            case HUD -> "HUD";
+            case CHAT -> "Chat";
+            case CAMERA -> "Camera";
+            case CROSSHAIR -> "Crosshair";
+            case VISUAL -> "Visual";
+            case PERFORMANCE -> "Performance";
+            case MOVEMENT -> "Movement";
+            case COMBAT -> "Combat";
+            case MISC -> "Misc";
+        };
     }
 
     private List<Module> filteredModules() {
@@ -188,7 +386,6 @@ public final class SaltScreen extends Screen {
 
         List<Module> out = new ArrayList<>();
         for (Module m : SaltClient.MODULES.all()) {
-            // If user is searching, show matches across all categories.
             if (q.isEmpty()) {
                 if (selected != ModuleCategory.ALL && m.getCategory() != selected) continue;
             } else {
@@ -205,56 +402,66 @@ public final class SaltScreen extends Screen {
             return true;
         }
 
-        int panelW = Math.min(this.width - 40, 820);
-        int panelH = Math.min(this.height - 40, 460);
-        int panelX = (this.width - panelW) / 2;
-        int panelY = (this.height - panelH) / 2;
+        Layout l = layout();
 
-        int topBarH = 54;
-        int catW = 140;
-        int innerX = panelX + 12;
-        int innerY = panelY + topBarH;
-        int innerW = panelW - 24;
-        int innerH = panelH - topBarH - 12;
+        // Header back button
+        if (inside(mouseX, mouseY, l.actionX, l.actionY, ACTION_SIZE, ACTION_SIZE)) {
+            this.close();
+            return true;
+        }
 
-        int catX = innerX;
-        int catY = innerY;
-        int catH = innerH;
-
-        int listX = innerX + catW + 10;
-        int listY = innerY;
-        int listW = innerW - catW - 10;
-        int listH = innerH;
-
-        // Category clicks
-        int rowH = 18;
-        int yy = catY;
+        // Sidebar category clicks
+        int rowH = 30;
+        int gap = 6;
+        int y = l.sidebarY + 10;
         for (ModuleCategory c : ModuleCategory.values()) {
-            boolean inside = mouseX >= catX && mouseX < catX + catW && mouseY >= yy && mouseY < yy + rowH;
-            if (inside) {
+            int x = l.sidebarX + 8;
+            int w = l.sidebarW - 16;
+            if (inside(mouseX, mouseY, x, y, w, rowH)) {
                 selected = c;
                 scroll = 0;
                 return true;
             }
-            yy += rowH + 4;
-            if (yy > catY + catH - rowH) break;
+
+            y += rowH + gap;
+            if (y > l.sidebarY + l.sidebarH - rowH - 4) break;
+        }
+
+        // Footer action buttons
+        if (inside(mouseX, mouseY, l.resetX, l.resetY, l.resetW, l.resetH)) {
+            HudPos.resetAll();
+            SaltClient.CONFIG.save(SaltClient.MODULES);
+            return true;
+        }
+        if (inside(mouseX, mouseY, l.editX, l.editY, l.editW, l.editH)) {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc != null) mc.setScreen(new HudEditorScreen(this));
+            return true;
         }
 
         // Module clicks
-        if (mouseX < listX || mouseX >= listX + listW || mouseY < listY || mouseY >= listY + listH) {
+        if (!inside(mouseX, mouseY, l.listX, l.listY, l.listW, l.listH)) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
 
         List<Module> list = filteredModules();
-        int cols = (listW >= 520) ? 2 : 1;
-        int gap = 8;
-        int entryH = 22;
-        int colW = (listW - (cols - 1) * gap) / cols;
+        int cols = (l.listW >= 640) ? 2 : 1;
+        int gapModules = 8;
+        int cardH = 64;
+        int colW = (l.listW - (cols - 1) * gapModules) / cols;
 
-        double localY = mouseY - listY + scroll;
-        int row = (int) (localY / (entryH + gap));
-        int col = (int) ((mouseX - listX) / (colW + gap));
-        if (col < 0 || col >= cols) return true;
+        double localY = mouseY - l.listY + scroll;
+
+        int unitW = colW + gapModules;
+        int unitH = cardH + gapModules;
+        int col = (int) ((mouseX - l.listX) / unitW);
+        int row = (int) (localY / unitH);
+
+        if (col < 0 || col >= cols || row < 0) return true;
+
+        double inCol = (mouseX - l.listX) - (col * unitW);
+        double inRow = localY - (row * unitH);
+        if (inCol < 0 || inCol >= colW || inRow < 0 || inRow >= cardH) return true;
 
         int idx = row * cols + col;
         if (idx < 0 || idx >= list.size()) return true;
@@ -263,7 +470,6 @@ public final class SaltScreen extends Screen {
         if (button == 1) {
             openSettings(m);
         } else {
-            // Allow toggling even if WIP (it just won't do anything yet).
             m.toggle();
         }
         return true;
@@ -277,29 +483,11 @@ public final class SaltScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        // Scroll modules list if the mouse is over the list area.
-        int panelW = Math.min(this.width - 40, 820);
-        int panelH = Math.min(this.height - 40, 460);
-        int panelX = (this.width - panelW) / 2;
-        int panelY = (this.height - panelH) / 2;
-
-        int topBarH = 54;
-        int catW = 140;
-        int innerX = panelX + 12;
-        int innerY = panelY + topBarH;
-        int innerW = panelW - 24;
-        int innerH = panelH - topBarH - 12;
-
-        int listX = innerX + catW + 10;
-        int listY = innerY;
-        int listW = innerW - catW - 10;
-        int listH = innerH;
-
-        if (mouseX >= listX && mouseX < listX + listW && mouseY >= listY && mouseY < listY + listH) {
-            scroll -= verticalAmount * 18.0;
+        Layout l = layout();
+        if (inside(mouseX, mouseY, l.listX, l.listY, l.listW, l.listH)) {
+            scroll -= verticalAmount * 20.0;
             return true;
         }
-
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
@@ -308,9 +496,23 @@ public final class SaltScreen extends Screen {
         return true;
     }
 
-    @Override
-    public void removed() {
-        super.removed();
+    private String trimToWidth(String text, int width) {
+        if (text == null || text.isEmpty()) return "";
+        if (this.textRenderer.getWidth(text) <= width) return text;
+
+        String suffix = "...";
+        int suffixW = this.textRenderer.getWidth(suffix);
+        if (suffixW >= width) return suffix;
+
+        int end = text.length();
+        while (end > 0 && this.textRenderer.getWidth(text.substring(0, end)) + suffixW > width) {
+            end--;
+        }
+        return text.substring(0, Math.max(0, end)) + suffix;
+    }
+
+    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
+        return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
     private static double clamp(double v, double min, double max) {
