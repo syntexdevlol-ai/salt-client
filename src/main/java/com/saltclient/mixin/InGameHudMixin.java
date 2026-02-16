@@ -33,7 +33,7 @@ public final class InGameHudMixin {
             cancellable = true
     )
     private void salt_renderScoreboardSidebar(DrawContext ctx, RenderTickCounter tickCounter, CallbackInfo ci) {
-        if (SaltClient.MODULES.isEnabled("minimalhud")) {
+        if (SaltClient.MODULES.isEnabled("minimalhud") || SaltClient.MODULES.isEnabled("noscoreboard")) {
             ci.cancel();
         }
     }
@@ -44,7 +44,7 @@ public final class InGameHudMixin {
             cancellable = true
     )
     private void salt_renderScoreboardSidebarObjective(DrawContext ctx, ScoreboardObjective objective, CallbackInfo ci) {
-        if (SaltClient.MODULES.isEnabled("minimalhud")) {
+        if (SaltClient.MODULES.isEnabled("minimalhud") || SaltClient.MODULES.isEnabled("noscoreboard")) {
             ci.cancel();
         }
     }

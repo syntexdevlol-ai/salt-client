@@ -3,6 +3,7 @@ package com.saltclient.module.impl.visual;
 import com.saltclient.mixin.GameRendererInvoker;
 import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
+import com.saltclient.setting.IntSetting;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.PostEffectProcessor;
 import net.minecraft.util.Identifier;
@@ -14,24 +15,28 @@ import net.minecraft.util.math.MathHelper;
  * - Enables only briefly when camera rotates.
  */
 public final class MotionBlurModule extends Module {
-    private static final Identifier BLUR_SHADER = Identifier.of("saltclient", "shaders/post/motion_blur.json");
     private static final int HOLD_TICKS = 3;
     private static final float TURN_THRESHOLD = 0.35F;
+
+    private final IntSetting strength;
 
     private PostEffectProcessor appliedProcessor;
     private boolean hasLastAngles;
     private float lastYaw;
     private float lastPitch;
     private int activeTicks;
+    private int lastStrength;
 
     public MotionBlurModule() {
         super("motionblur", "MotionBlur", "Adds a subtle motion blur effect.", ModuleCategory.VISUAL, true);
+        this.strength = addSetting(new IntSetting("strength", "Strength", "Motion blur intensity (1-5).", 3, 1, 5, 1));
     }
 
     @Override
     protected void onEnable(MinecraftClient mc) {
         activeTicks = 0;
         hasLastAngles = false;
+        lastStrength = strength.getValue();
     }
 
     @Override
@@ -61,6 +66,13 @@ public final class MotionBlurModule extends Module {
             appliedProcessor = null;
         }
 
+        int currentStrength = strength.getValue();
+        if (currentStrength != lastStrength) {
+            lastStrength = currentStrength;
+            // Rebuild post effect so new strength preset is applied.
+            disableIfOwned(mc);
+        }
+
         boolean shouldBlur = mc.currentScreen == null && activeTicks > 0;
         if (shouldBlur) {
             if (appliedProcessor == null && mc.gameRenderer.getPostProcessor() == null) {
@@ -87,12 +99,17 @@ public final class MotionBlurModule extends Module {
         if (mc.gameRenderer.getPostProcessor() != null) return;
 
         try {
-            ((GameRendererInvoker) mc.gameRenderer).saltclient$loadPostProcessor(BLUR_SHADER);
+            ((GameRendererInvoker) mc.gameRenderer).saltclient$loadPostProcessor(shaderForStrength(strength.getValue()));
             appliedProcessor = mc.gameRenderer.getPostProcessor();
         } catch (Throwable ignored) {
             // Keep this fail-safe: if loading fails on a specific device, the module simply does nothing.
             appliedProcessor = null;
         }
+    }
+
+    private static Identifier shaderForStrength(int strength) {
+        int s = MathHelper.clamp(strength, 1, 5);
+        return Identifier.of("saltclient", "shaders/post/motion_blur_" + s + ".json");
     }
 
     private void disableIfOwned(MinecraftClient mc) {

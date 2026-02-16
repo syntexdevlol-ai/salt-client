@@ -8,6 +8,7 @@ import com.saltclient.module.impl.crosshair.CrosshairEditorModule;
 import com.saltclient.module.impl.crosshair.CustomCrosshairModule;
 import com.saltclient.module.impl.movement.AutoSprintModule;
 import com.saltclient.module.impl.movement.InventoryWalkModule;
+import com.saltclient.module.impl.misc.AutoRespawnModule;
 import com.saltclient.module.impl.misc.ReplayIndicatorModule;
 import com.saltclient.module.impl.misc.ScreenshotHelperModule;
 import com.saltclient.module.impl.performance.FontRendererModule;
@@ -73,7 +74,10 @@ public final class ModuleManager {
     public void registerDefaults() {
         // HUD
         register(new KeystrokesModule());
+        register(new KeyOverlayModule());
         register(new MouseButtonsModule());
+        register(new MouseCpsGraphModule());
+        register(new ClickHeatmapModule());
         register(new CpsCounterModule());
         register(new LeftClickCpsModule());
         register(new RightClickCpsModule());
@@ -88,7 +92,28 @@ public final class ModuleManager {
         register(new CoordinatesModule());
         register(new DirectionHudModule());
         register(new SessionTimeModule());
+        register(new MatchTimerModule());
         register(new PlayerHudModule());
+        register(new KillCounterModule());
+        register(new DeathCounterModule());
+        register(new StreakCounterModule());
+        register(new RespawnTimerModule());
+        register(new TabListPlayerCountModule());
+        register(new PerformanceGraphModule());
+        register(new MemoryUsageHudModule());
+        register(new CpuTempHudModule());
+        register(new GpuTempHudModule());
+        register(new ToggleModule("damageindicator", "DamageIndicator", "Show damage feedback markers (lite).", ModuleCategory.HUD));
+        register(new ToggleModule("noscoreboard", "NoScoreboard", "Hide scoreboard sidebar.", ModuleCategory.HUD));
+        register(new ToggleModule("scoreboardmover", "ScoreboardMover", "Move scoreboard position (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("scoreboardcleaner", "ScoreboardCleaner", "Clean scoreboard text (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("tablistcleaner", "TabListCleaner", "Clean tab list formatting (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("tablistscroller", "TabListScroller", "Scrollable tab list (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("tablistsearch", "TabListSearch", "Search players in tab list (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("tablistping", "TabListPing", "Show ping in tab list (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("tabliststats", "TabListStats", "Show extra player stats in tab list (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("debugoverlay", "DebugOverlay", "Client debug overlay tools (planned).", ModuleCategory.HUD));
+        register(new ToggleModule("hudsnapgrid", "HUDSnapGrid", "Snap HUD editor movement to a grid (planned).", ModuleCategory.HUD));
         register(new ToggleModule("minimalhud", "MinimalHUD", "Simplify vanilla HUD.", ModuleCategory.HUD));
         register(new ToggleModule("cleanhud", "CleanHUD", "Hide vanilla HUD.", ModuleCategory.HUD));
         register(new HudEditorModule());
@@ -99,6 +124,24 @@ public final class ModuleManager {
         register(new ToggleModule("chatautogg", "ChatAutoGG", "Auto-send gg (best-effort).", ModuleCategory.CHAT));
 
         // Misc
+        register(new AutoRespawnModule());
+        register(new ToggleModule("serverswitcher", "ServerSwitcher", "Quick switch between saved servers (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("serverautoreconnect", "ServerAutoReconnect", "Auto reconnect after disconnect (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("disconnectnotifier", "DisconnectNotifier", "Notify when disconnected (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("afkdetector", "AFKDetector", "Detect AFK state from idle input (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("keybindmanager", "KeybindManager", "Manage module keybind groups (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("modulesearch", "ModuleSearch", "Enhanced module search options (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("modulefavorites", "ModuleFavorites", "Pin favorite modules (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("moduleprofiles", "ModuleProfiles", "Store module on/off profiles (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("profileswitcher", "ProfileSwitcher", "Switch module profiles quickly (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("configcloudsync", "ConfigCloudSync", "Sync configs to cloud storage (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("autoconfigsave", "AutoConfigSave", "Auto-save config on changes.", ModuleCategory.MISC));
+        register(new ToggleModule("configversioning", "ConfigVersioning", "Keep historical config snapshots (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("themeswitcher", "ThemeSwitcher", "Switch UI themes (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("accentcolorpicker", "AccentColorPicker", "Pick GUI accent color (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("fontselector", "FontSelector", "Switch HUD/UI font style (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("uiscale", "UIScale", "Adjust custom UI scale (planned).", ModuleCategory.MISC));
+        register(new ToggleModule("draganddropui", "DragAndDropUI", "Drag and drop UI widgets (planned).", ModuleCategory.MISC));
         register(new ScreenshotHelperModule());
         register(new ReplayIndicatorModule());
 
@@ -107,6 +150,9 @@ public final class ModuleManager {
         register(new FreeLookModule());
         register(new ZoomModule());
         register(new ToggleModule("zoomscroll", "ZoomScroll", "Adjust zoom with scroll.", ModuleCategory.CAMERA));
+        register(new ToggleModule("nobobview", "NoBobView", "Disable view bobbing.", ModuleCategory.CAMERA));
+        register(new ToggleModule("mousesmoothingtoggle", "MouseSmoothingToggle", "Toggle mouse smoothing (planned).", ModuleCategory.CAMERA));
+        register(new ToggleModule("rawmouseinput", "RawMouseInput", "Use raw mouse input (planned).", ModuleCategory.CAMERA));
         register(new FullBrightModule());
         register(new MotionBlurModule());
 
@@ -122,12 +168,23 @@ public final class ModuleManager {
         // Visual
         register(new ToggleModule("lowfire", "LowFire", "Disable fire overlay.", ModuleCategory.VISUAL));
         register(new ToggleModule("clearwater", "ClearWater", "Disable underwater overlay + reduce water fog.", ModuleCategory.VISUAL));
+        register(new ToggleModule("nohurtcam", "NoHurtCam", "Disable hurt camera tilt.", ModuleCategory.VISUAL));
         register(new ToggleModule("timechanger", "TimeChanger", "Client-side time override.", ModuleCategory.VISUAL));
         register(new ToggleModule("weatherchanger", "WeatherChanger", "Client-side weather override.", ModuleCategory.VISUAL));
         register(new ToggleModule("weatherdisabler", "WeatherDisabler", "Disable client-side weather.", ModuleCategory.VISUAL));
         register(new ToggleModule("fogremover", "FogRemover", "Reduce fog.", ModuleCategory.VISUAL));
         register(new ToggleModule("clouddisabler", "CloudDisabler", "Disable clouds.", ModuleCategory.VISUAL));
         register(new ToggleModule("shadowdisabler", "ShadowDisabler", "Disable entity shadows.", ModuleCategory.VISUAL));
+        register(new ToggleModule("blockoutline", "BlockOutline", "Enhanced block outlines (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("blockhighlight", "BlockHighlight", "Highlight targeted blocks (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("blockoverlay", "BlockOverlay", "Extra block overlay render (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("entityhighlight", "EntityHighlight", "Highlight entities (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("playeresp", "PlayerESP", "Player ESP overlay (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("projectiletrail", "ProjectileTrail", "Render projectile trails (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("arrowesp", "ArrowESP", "Highlight arrows (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("pearltrajectory", "PearlTrajectory", "Predict pearl trajectory (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("throwablepredictor", "ThrowablePredictor", "Predict throwable arcs (planned).", ModuleCategory.VISUAL));
+        register(new ToggleModule("healthparticles", "HealthParticles", "Spawn health/damage particles (planned).", ModuleCategory.VISUAL));
 
         // Performance (lite via option tweaks)
         register(new ToggleModule("animationlimiter", "AnimationLimiter", "Limit some animations.", ModuleCategory.PERFORMANCE));
@@ -149,6 +206,17 @@ public final class ModuleManager {
         register(new ToggleModule("mipmapoptimizer", "MipmapOptimizer", "Disable mipmaps (lite).", ModuleCategory.PERFORMANCE));
         register(new ToggleModule("dynamicresolution", "DynamicResolution", "Adjust view distance based on FPS (lite).", ModuleCategory.PERFORMANCE));
         register(new ToggleModule("unfocusedfpssaver", "UnfocusedFPSSaver", "Limit FPS in menus (lite).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("idlefpslock", "IdleFPSLock", "Lock FPS lower while idle.", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("smartvsync", "SmartVSync", "Smart VSync controller (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("framepacing", "FramePacing", "Stabilize frame pacing (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("inputdelayreducer", "InputDelayReducer", "Reduce input delay where possible (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("anticrash", "AntiCrash", "Guard against common client crashes (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("packetlimiter", "PacketLimiter", "Throttle risky packet bursts (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("entitylimiter", "EntityLimiter", "Limit heavy entity renders (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("worldunloadoptimizer", "WorldUnloadOptimizer", "Optimize world unload tasks (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("chunkcache", "ChunkCache", "Cache chunks for smoother swaps (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("fastchunkswap", "FastChunkSwap", "Faster chunk swap handling (planned).", ModuleCategory.PERFORMANCE));
+        register(new ToggleModule("worldpreloader", "WorldPreloader", "Preload nearby world chunks (planned).", ModuleCategory.PERFORMANCE));
         register(new RamCleanerModule());
         register(new ToggleModule("gcoptimizer", "GCOptimizer", "Auto-GC under memory pressure (lite).", ModuleCategory.PERFORMANCE));
         register(new ToggleModule("threadoptimizer", "ThreadOptimizer", "Chunk builder tweaks (lite).", ModuleCategory.PERFORMANCE));
@@ -157,6 +225,7 @@ public final class ModuleManager {
 
         // Movement
         register(new InventoryWalkModule());
+        register(new ToggleModule("scrollfix", "ScrollFix", "Fix scroll behavior on mobile/trackpads (planned).", ModuleCategory.MOVEMENT));
         register(new ToggleModule("togglesprint", "ToggleSprint", "Enable vanilla toggle sprint option.", ModuleCategory.MOVEMENT));
         register(new AutoSprintModule());
         register(new ToggleModule("togglesneak", "ToggleSneak", "Enable vanilla toggle sneak option.", ModuleCategory.MOVEMENT));

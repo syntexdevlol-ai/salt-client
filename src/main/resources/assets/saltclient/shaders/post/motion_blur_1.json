@@ -16,7 +16,7 @@
             1.0,
             0.0
           ],
-          "RadiusMultiplier": 0.11
+          "RadiusMultiplier": 0.05
         }
       ]
     },
@@ -32,7 +32,7 @@
             0.0,
             1.0
           ],
-          "RadiusMultiplier": 0.11
+          "RadiusMultiplier": 0.05
         }
       ]
     },
@@ -50,19 +50,19 @@
         {
           "name": "EdgeStart",
           "values": [
-            0.12
+            0.08
           ]
         },
         {
           "name": "EdgeEnd",
           "values": [
-            0.32
+            0.22
           ]
         },
         {
           "name": "BlendStrength",
           "values": [
-            0.65
+            0.35
           ]
         }
       ]

@@ -62,7 +62,8 @@ public final class OptionTweaks {
             SaltClient.MODULES.isEnabled("dynamicresolution")
                 || SaltClient.MODULES.isEnabled("dynamicfps")
                 || SaltClient.MODULES.isEnabled("backgroundfpslimit")
-                || SaltClient.MODULES.isEnabled("unfocusedfpssaver");
+                || SaltClient.MODULES.isEnabled("unfocusedfpssaver")
+                || SaltClient.MODULES.isEnabled("idlefpslock");
         if (!needsRealtime && mask == lastMask && (now - lastApplyMs) < 1000L) {
             return;
         }
@@ -131,6 +132,13 @@ public final class OptionTweaks {
         if (SaltClient.MODULES.isEnabled("animationlimiter")) {
             bobView = false;
             distortionScale = 0.0;
+            damageTilt = 0.0;
+        }
+
+        if (SaltClient.MODULES.isEnabled("nobobview")) {
+            bobView = false;
+        }
+        if (SaltClient.MODULES.isEnabled("nohurtcam")) {
             damageTilt = 0.0;
         }
 
@@ -227,6 +235,9 @@ public final class OptionTweaks {
         m |= bit(23, SaltClient.MODULES.isEnabled("backgroundfpslimit"));
         m |= bit(24, SaltClient.MODULES.isEnabled("unfocusedfpssaver"));
         m |= bit(25, SaltClient.MODULES.isEnabled("fontrenderer"));
+        m |= bit(26, SaltClient.MODULES.isEnabled("nobobview"));
+        m |= bit(27, SaltClient.MODULES.isEnabled("nohurtcam"));
+        m |= bit(28, SaltClient.MODULES.isEnabled("idlefpslock"));
         return m;
     }
 
@@ -271,6 +282,10 @@ public final class OptionTweaks {
             if (idle && mc.currentScreen == null && mc.player != null) {
                 limit = Math.min(limit, 30);
             }
+        }
+
+        if (SaltClient.MODULES.isEnabled("idlefpslock") && ActivityTracker.idleMs() > 2000L) {
+            limit = Math.min(limit, 20);
         }
 
         return limit;

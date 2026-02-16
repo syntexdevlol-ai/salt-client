@@ -30,6 +30,12 @@ public final class SaltState {
     // --- Hit marker ---
     public static long lastHitMs;
     public static long lastKillMs;
+    public static long lastDeathMs;
+    public static long matchStartMs;
+    public static int killCount;
+    public static int deathCount;
+    public static int streakCount;
+    public static int bestStreak;
 
     // --- Screenshot helper ---
     public static long lastScreenshotMs;
@@ -44,5 +50,15 @@ public final class SaltState {
     public static void clampZoom() {
         zoomFov = MathHelper.clamp(zoomFov, 10, 70);
     }
-}
 
+    public static void resetMatchStats(long nowMs) {
+        matchStartMs = nowMs;
+        killCount = 0;
+        deathCount = 0;
+        streakCount = 0;
+        bestStreak = 0;
+        lastHitMs = 0L;
+        lastKillMs = 0L;
+        lastDeathMs = 0L;
+    }
+}
