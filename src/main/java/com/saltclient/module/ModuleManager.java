@@ -9,6 +9,7 @@ import com.saltclient.module.impl.crosshair.CustomCrosshairModule;
 import com.saltclient.module.impl.movement.AutoSprintModule;
 import com.saltclient.module.impl.movement.InventoryWalkModule;
 import com.saltclient.module.impl.misc.AutoRespawnModule;
+import com.saltclient.module.impl.misc.GuiModule;
 import com.saltclient.module.impl.misc.ReplayIndicatorModule;
 import com.saltclient.module.impl.misc.ScreenshotHelperModule;
 import com.saltclient.module.impl.performance.FontRendererModule;
@@ -124,6 +125,7 @@ public final class ModuleManager {
         register(new ToggleModule("chatautogg", "ChatAutoGG", "Auto-send gg (best-effort).", ModuleCategory.CHAT));
 
         // Misc
+        register(new GuiModule());
         register(new AutoRespawnModule());
         register(new ToggleModule("serverswitcher", "ServerSwitcher", "Quick switch between saved servers (planned).", ModuleCategory.MISC));
         register(new ToggleModule("serverautoreconnect", "ServerAutoReconnect", "Auto reconnect after disconnect (planned).", ModuleCategory.MISC));

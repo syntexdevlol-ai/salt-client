@@ -14,7 +14,8 @@
     "MinecraftClientMixin",
     "MouseMixin",
     "ScreenMixin",
-    "ScreenshotRecorderMixin"
+    "ScreenshotRecorderMixin",
+    "TitleScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
