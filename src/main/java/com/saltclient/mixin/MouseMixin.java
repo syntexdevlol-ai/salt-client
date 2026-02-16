@@ -1,6 +1,8 @@
 package com.saltclient.mixin;
 
 import com.saltclient.SaltClient;
+import com.saltclient.module.Module;
+import com.saltclient.module.impl.visual.ZoomModule;
 import com.saltclient.state.SaltState;
 import net.minecraft.client.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,14 +17,12 @@ public final class MouseMixin {
         if (!SaltClient.MODULES.isEnabled("zoomscroll")) return;
         if (!SaltState.zooming) return;
 
-        if (vertical > 0) SaltState.zoomFov -= 2;
-        else if (vertical < 0) SaltState.zoomFov += 2;
-
-        SaltState.clampZoom();
-        SaltClient.CONFIG.save(SaltClient.MODULES);
+        Module m = SaltClient.MODULES.byId("zoom").orElse(null);
+        if (!(m instanceof ZoomModule zm)) return;
+        if (vertical > 0) zm.adjustZoomFov(-2);
+        else if (vertical < 0) zm.adjustZoomFov(2);
 
         // Prevent hotbar scrolling while zooming.
         ci.cancel();
     }
 }
-

@@ -2,6 +2,8 @@ package com.saltclient.module;
 
 import com.saltclient.module.impl.hud.*;
 import com.saltclient.module.impl.combat.HitColorModule;
+import com.saltclient.module.impl.camera.FreeLookModule;
+import com.saltclient.module.impl.camera.PerspectiveModule;
 import com.saltclient.module.impl.crosshair.CrosshairEditorModule;
 import com.saltclient.module.impl.crosshair.CustomCrosshairModule;
 import com.saltclient.module.impl.movement.AutoSprintModule;
@@ -13,6 +15,7 @@ import com.saltclient.module.impl.performance.RamCleanerModule;
 import com.saltclient.module.impl.visual.FullBrightModule;
 import com.saltclient.module.impl.visual.ZoomModule;
 import com.saltclient.util.HudLayout;
+import com.saltclient.util.HudPos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
@@ -50,12 +53,14 @@ public final class ModuleManager {
 
     public void onTick(MinecraftClient mc) {
         for (Module m : modules) {
+            m.onBindTick(mc);
             if (m.isEnabled()) m.onTick(mc);
         }
     }
 
     public void onHudRender(DrawContext ctx) {
         HudLayout.beginFrame(MinecraftClient.getInstance());
+        HudPos.beginFrame();
         for (Module m : modules) {
             if (m.isEnabled()) m.onHudRender(ctx);
         }
@@ -85,6 +90,7 @@ public final class ModuleManager {
         register(new PlayerHudModule());
         register(new ToggleModule("minimalhud", "MinimalHUD", "Simplify vanilla HUD.", ModuleCategory.HUD));
         register(new ToggleModule("cleanhud", "CleanHUD", "Hide vanilla HUD.", ModuleCategory.HUD));
+        register(new HudEditorModule());
 
         // Chat
         register(new ToggleModule("chattimestamp", "ChatTimestamp", "Prefix chat with timestamps.", ModuleCategory.CHAT));
@@ -96,8 +102,8 @@ public final class ModuleManager {
         register(new ReplayIndicatorModule());
 
         // Camera / visual
-        register(new ToggleModule("perspective", "Perspective", "Hold V for third person.", ModuleCategory.CAMERA));
-        register(new ToggleModule("freelook", "FreeLook", "Hold B for freelook.", ModuleCategory.CAMERA));
+        register(new PerspectiveModule());
+        register(new FreeLookModule());
         register(new ZoomModule());
         register(new ToggleModule("zoomscroll", "ZoomScroll", "Adjust zoom with scroll.", ModuleCategory.CAMERA));
         register(new FullBrightModule());

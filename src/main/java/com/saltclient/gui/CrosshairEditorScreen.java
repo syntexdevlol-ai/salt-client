@@ -1,7 +1,8 @@
 package com.saltclient.gui;
 
 import com.saltclient.SaltClient;
-import com.saltclient.state.SaltState;
+import com.saltclient.module.Module;
+import com.saltclient.module.impl.crosshair.CustomCrosshairModule;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -13,15 +14,8 @@ import net.minecraft.text.Text;
  * This is intentionally simple: a few +/- buttons and a color cycle.
  */
 public final class CrosshairEditorScreen extends Screen {
-    private static final int[] COLORS = new int[] {
-        0xFFE6ECFF, // white-ish
-        0xFF7BC96F, // green
-        0xFFFF5C5C, // red
-        0xFF8BE0FF, // cyan
-        0xFFFFD66E  // yellow
-    };
-
     private final Screen parent;
+    private CustomCrosshairModule crosshair;
 
     public CrosshairEditorScreen() {
         this(null);
@@ -48,6 +42,11 @@ public final class CrosshairEditorScreen extends Screen {
 
     @Override
     protected void init() {
+        Module m = SaltClient.MODULES.byId("customcrosshair").orElse(null);
+        if (m instanceof CustomCrosshairModule ccm) {
+            crosshair = ccm;
+        }
+
         int cx = this.width / 2;
         int y = this.height / 2 + 50;
 
@@ -56,64 +55,60 @@ public final class CrosshairEditorScreen extends Screen {
         int g = 6;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Size -"), b -> {
-            SaltState.crosshairSize--;
-            SaltState.clampCrosshair();
+            if (crosshair == null) return;
+            ((com.saltclient.setting.IntSetting) crosshair.getSetting("size")).dec();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx - w - g, y, w, h).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Size +"), b -> {
-            SaltState.crosshairSize++;
-            SaltState.clampCrosshair();
+            if (crosshair == null) return;
+            ((com.saltclient.setting.IntSetting) crosshair.getSetting("size")).inc();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx + g, y, w, h).build());
 
         y += h + g;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Gap -"), b -> {
-            SaltState.crosshairGap--;
-            SaltState.clampCrosshair();
+            if (crosshair == null) return;
+            ((com.saltclient.setting.IntSetting) crosshair.getSetting("gap")).dec();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx - w - g, y, w, h).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Gap +"), b -> {
-            SaltState.crosshairGap++;
-            SaltState.clampCrosshair();
+            if (crosshair == null) return;
+            ((com.saltclient.setting.IntSetting) crosshair.getSetting("gap")).inc();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx + g, y, w, h).build());
 
         y += h + g;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Thick -"), b -> {
-            SaltState.crosshairThickness--;
-            SaltState.clampCrosshair();
+            if (crosshair == null) return;
+            ((com.saltclient.setting.IntSetting) crosshair.getSetting("thickness")).dec();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx - w - g, y, w, h).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Thick +"), b -> {
-            SaltState.crosshairThickness++;
-            SaltState.clampCrosshair();
+            if (crosshair == null) return;
+            ((com.saltclient.setting.IntSetting) crosshair.getSetting("thickness")).inc();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx + g, y, w, h).build());
 
         y += h + g;
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Dot: " + (SaltState.crosshairDot ? "ON" : "OFF")), b -> {
-            SaltState.crosshairDot = !SaltState.crosshairDot;
-            b.setMessage(Text.literal("Dot: " + (SaltState.crosshairDot ? "ON" : "OFF")));
+        addDrawableChild(ButtonWidget.builder(Text.literal("Dot: " + (crosshair != null && ((com.saltclient.setting.BoolSetting) crosshair.getSetting("dot")).getValue() ? "ON" : "OFF")), b -> {
+            if (crosshair == null) return;
+            com.saltclient.setting.BoolSetting dot = (com.saltclient.setting.BoolSetting) crosshair.getSetting("dot");
+            dot.toggle();
+            b.setMessage(Text.literal("Dot: " + (dot.getValue() ? "ON" : "OFF")));
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx - w - g, y, w * 2 + g * 2, h).build());
 
         y += h + g;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Color"), b -> {
-            int idx = 0;
-            for (int i = 0; i < COLORS.length; i++) {
-                if (COLORS[i] == SaltState.crosshairColor) {
-                    idx = i;
-                    break;
-                }
-            }
-            SaltState.crosshairColor = COLORS[(idx + 1) % COLORS.length];
+            if (crosshair == null) return;
+            ((com.saltclient.setting.EnumSetting<?>) crosshair.getSetting("color")).next();
             SaltClient.CONFIG.save(SaltClient.MODULES);
         }).dimensions(cx - w - g, y, w * 2 + g * 2, h).build());
     }
@@ -129,20 +124,25 @@ public final class CrosshairEditorScreen extends Screen {
         int cy = this.height / 2;
         drawCrosshair(ctx, cx, cy);
 
-        String info = "Size=" + SaltState.crosshairSize
-            + " Gap=" + SaltState.crosshairGap
-            + " Thick=" + SaltState.crosshairThickness
-            + " Dot=" + (SaltState.crosshairDot ? "ON" : "OFF");
+        String info = crosshair == null
+            ? "CustomCrosshair module missing"
+            : "Size=" + ((com.saltclient.setting.IntSetting) crosshair.getSetting("size")).getValue()
+                + " Gap=" + ((com.saltclient.setting.IntSetting) crosshair.getSetting("gap")).getValue()
+                + " Thick=" + ((com.saltclient.setting.IntSetting) crosshair.getSetting("thickness")).getValue()
+                + " Dot=" + (((com.saltclient.setting.BoolSetting) crosshair.getSetting("dot")).getValue() ? "ON" : "OFF");
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(info), cx, cy + 22, 0xFF9FB0D8);
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
     private static void drawCrosshair(DrawContext ctx, int cx, int cy) {
-        int size = SaltState.crosshairSize;
-        int gap = SaltState.crosshairGap;
-        int t = SaltState.crosshairThickness;
-        int c = SaltState.crosshairColor;
+        Module m = SaltClient.MODULES.byId("customcrosshair").orElse(null);
+        if (!(m instanceof CustomCrosshairModule crosshair)) return;
+
+        int size = ((com.saltclient.setting.IntSetting) crosshair.getSetting("size")).getValue();
+        int gap = ((com.saltclient.setting.IntSetting) crosshair.getSetting("gap")).getValue();
+        int t = ((com.saltclient.setting.IntSetting) crosshair.getSetting("thickness")).getValue();
+        int c = ((com.saltclient.setting.EnumSetting<com.saltclient.module.impl.crosshair.CrosshairColor>) crosshair.getSetting("color")).getValue().argb;
 
         // Horizontal
         ctx.fill(cx - gap - size, cy - t / 2, cx - gap, cy + (t + 1) / 2, c);
@@ -151,7 +151,7 @@ public final class CrosshairEditorScreen extends Screen {
         ctx.fill(cx - t / 2, cy - gap - size, cx + (t + 1) / 2, cy - gap, c);
         ctx.fill(cx - t / 2, cy + gap, cx + (t + 1) / 2, cy + gap + size, c);
 
-        if (SaltState.crosshairDot) {
+        if (((com.saltclient.setting.BoolSetting) crosshair.getSetting("dot")).getValue()) {
             ctx.fill(cx - 1, cy - 1, cx + 1, cy + 1, c);
         }
     }

@@ -1,6 +1,7 @@
 package com.saltclient.module;
 
 public enum ModuleCategory {
+    ALL,
     HUD,
     CHAT,
     CAMERA,
@@ -11,4 +12,3 @@ public enum ModuleCategory {
     COMBAT,
     MISC
 }
-

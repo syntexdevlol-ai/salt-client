@@ -22,7 +22,7 @@ public final class ServerTpsModule extends Module {
         String text = HudCache.get("servertps:text", () -> String.format("TPS: %.1f", ServerTpsTracker.getTps()));
 
         int y = HudLayout.nextBottomRight(14);
-        int x = mc.getWindow().getScaledWidth() - mc.textRenderer.getWidth(text) - 14;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFF7BC96F, 0xAA0E121A);
+        int x = mc.getWindow().getScaledWidth() - (mc.textRenderer.getWidth(text) + 8) - 10;
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "servertps", text, x, y, 0xFF7BC96F, 0xAA0E121A);
     }
 }

@@ -3,6 +3,7 @@ package com.saltclient.module.impl.hud;
 import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.util.HudLayout;
+import com.saltclient.util.HudPos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -21,8 +22,11 @@ public final class MouseButtonsModule extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return;
 
-        int x = 10;
-        int y = HudLayout.nextTopLeft(22);
+        int defaultX = 10;
+        int defaultY = HudLayout.nextTopLeft(22);
+        HudPos.Pos pos = HudPos.resolve("mousebuttons", defaultX, defaultY);
+        int x = pos.x;
+        int y = pos.y;
 
         int w = 28;
         int h = 18;
@@ -30,6 +34,8 @@ public final class MouseButtonsModule extends Module {
 
         drawBtn(ctx, mc.options.attackKey.isPressed(), x, y, w, h, "LMB");
         drawBtn(ctx, mc.options.useKey.isPressed(), x + w + g, y, w, h, "RMB");
+
+        HudPos.recordBounds("mousebuttons", x, y, w * 2 + g, h);
     }
 
     private void drawBtn(DrawContext ctx, boolean pressed, int x, int y, int w, int h, String label) {

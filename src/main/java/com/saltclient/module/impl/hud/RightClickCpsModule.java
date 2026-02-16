@@ -22,7 +22,7 @@ public final class RightClickCpsModule extends Module {
         String text = HudCache.get("rightclickcps:text", () -> "R-CPS: " + InputTracker.CLICKS.getRightCps());
 
         int y = HudLayout.nextTopRight(14);
-        int x = mc.getWindow().getScaledWidth() - mc.textRenderer.getWidth(text) - 14;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFE6ECFF, 0xAA0E121A);
+        int x = mc.getWindow().getScaledWidth() - (mc.textRenderer.getWidth(text) + 8) - 10;
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "rightclickcps", text, x, y, 0xFFE6ECFF, 0xAA0E121A);
     }
 }

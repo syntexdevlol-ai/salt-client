@@ -43,7 +43,7 @@ public final class SessionTimeModule extends Module {
 
         int y = HudLayout.nextBottomLeft(14);
         int x = 10;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFE6ECFF, 0xAA0E121A);
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "sessiontime", text, x, y, 0xFFE6ECFF, 0xAA0E121A);
     }
 
     private static String format(long ms) {

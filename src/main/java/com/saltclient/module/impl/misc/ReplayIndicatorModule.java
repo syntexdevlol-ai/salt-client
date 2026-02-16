@@ -25,9 +25,8 @@ public final class ReplayIndicatorModule extends Module {
 
         String text = SaltState.freeLookActive ? "FREELOOK" : "3RD PERSON";
         int w = mc.getWindow().getScaledWidth();
-        int x = w - mc.textRenderer.getWidth(text) - 14;
+        int x = w - (mc.textRenderer.getWidth(text) + 8) - 10;
         int y = 10;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFFF5C5C, 0xAA0E121A);
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "replayindicator", text, x, y, 0xFFFF5C5C, 0xAA0E121A);
     }
 }
-

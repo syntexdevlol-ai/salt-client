@@ -20,6 +20,8 @@ public final class OptionTweaks {
     private static boolean baselined;
     private static int dynViewDistance;
     private static long lastDynAdjustMs;
+    private static long lastApplyMs;
+    private static int lastMask;
 
     private static int baseViewDistance;
     private static double baseEntityDistanceScaling;
@@ -52,6 +54,20 @@ public final class OptionTweaks {
         GameOptions o = mc.options;
 
         if (!baselined) baseline(o);
+
+        // If nothing relevant changed and we don't need realtime adjustments, don't spam option logic.
+        long now = System.currentTimeMillis();
+        int mask = computeMask();
+        boolean needsRealtime =
+            SaltClient.MODULES.isEnabled("dynamicresolution")
+                || SaltClient.MODULES.isEnabled("dynamicfps")
+                || SaltClient.MODULES.isEnabled("backgroundfpslimit")
+                || SaltClient.MODULES.isEnabled("unfocusedfpssaver");
+        if (!needsRealtime && mask == lastMask && (now - lastApplyMs) < 1000L) {
+            return;
+        }
+        lastMask = mask;
+        lastApplyMs = now;
 
         // ---- Compute target values (start from baseline) ----
         int viewDistance = baseViewDistance;
@@ -181,6 +197,41 @@ public final class OptionTweaks {
 
         o.useNativeTransport = useNativeTransport;
         o.hudHidden = hudHidden;
+    }
+
+    private static int computeMask() {
+        int m = 0;
+        m |= bit(0, SaltClient.MODULES.isEnabled("lowgraphicsmode"));
+        m |= bit(1, SaltClient.MODULES.isEnabled("fpsboost"));
+        m |= bit(2, SaltClient.MODULES.isEnabled("clouddisabler"));
+        m |= bit(3, SaltClient.MODULES.isEnabled("shadowdisabler"));
+        m |= bit(4, SaltClient.MODULES.isEnabled("particlereducer"));
+        m |= bit(5, SaltClient.MODULES.isEnabled("fastlighting"));
+        m |= bit(6, SaltClient.MODULES.isEnabled("entityculling"));
+        m |= bit(7, SaltClient.MODULES.isEnabled("chunkculling"));
+        m |= bit(8, SaltClient.MODULES.isEnabled("blockculling"));
+        m |= bit(9, SaltClient.MODULES.isEnabled("mipmapoptimizer"));
+        m |= bit(10, SaltClient.MODULES.isEnabled("textureoptimizer"));
+        m |= bit(11, SaltClient.MODULES.isEnabled("uiblurtoggle"));
+        m |= bit(12, SaltClient.MODULES.isEnabled("animationlimiter"));
+        m |= bit(13, SaltClient.MODULES.isEnabled("fastmath"));
+        m |= bit(14, SaltClient.MODULES.isEnabled("threadoptimizer"));
+        m |= bit(15, SaltClient.MODULES.isEnabled("smartrendering"));
+        m |= bit(16, SaltClient.MODULES.isEnabled("soundengineoptimizer"));
+        m |= bit(17, SaltClient.MODULES.isEnabled("networkoptimizer"));
+        m |= bit(18, SaltClient.MODULES.isEnabled("cleanhud"));
+        m |= bit(19, SaltClient.MODULES.isEnabled("togglesprint"));
+        m |= bit(20, SaltClient.MODULES.isEnabled("togglesneak"));
+        m |= bit(21, SaltClient.MODULES.isEnabled("dynamicresolution"));
+        m |= bit(22, SaltClient.MODULES.isEnabled("dynamicfps"));
+        m |= bit(23, SaltClient.MODULES.isEnabled("backgroundfpslimit"));
+        m |= bit(24, SaltClient.MODULES.isEnabled("unfocusedfpssaver"));
+        m |= bit(25, SaltClient.MODULES.isEnabled("fontrenderer"));
+        return m;
+    }
+
+    private static int bit(int idx, boolean enabled) {
+        return enabled ? (1 << idx) : 0;
     }
 
     private static int applyDynamicResolution(MinecraftClient mc, int viewDistanceLimit) {

@@ -22,7 +22,7 @@ public final class LeftClickCpsModule extends Module {
         String text = HudCache.get("leftclickcps:text", () -> "L-CPS: " + InputTracker.CLICKS.getLeftCps());
 
         int y = HudLayout.nextTopRight(14);
-        int x = mc.getWindow().getScaledWidth() - mc.textRenderer.getWidth(text) - 14;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFE6ECFF, 0xAA0E121A);
+        int x = mc.getWindow().getScaledWidth() - (mc.textRenderer.getWidth(text) + 8) - 10;
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "leftclickcps", text, x, y, 0xFFE6ECFF, 0xAA0E121A);
     }
 }

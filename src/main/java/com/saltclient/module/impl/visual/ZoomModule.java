@@ -3,55 +3,69 @@ package com.saltclient.module.impl.visual;
 import com.saltclient.SaltClient;
 import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
+import com.saltclient.module.KeybindMode;
+import com.saltclient.setting.IntSetting;
 import com.saltclient.state.SaltState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.SimpleOption;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Simple zoom:
- * - Enable the module
- * - Hold the Zoom key (default: C)
+ * - Enable the module (or bind it to a key with HOLD mode)
  *
  * Implemented by temporarily lowering the client's FOV option.
  */
 public final class ZoomModule extends Module {
     private Integer prevFov;
+    private final IntSetting zoomFov;
 
     public ZoomModule() {
         super("zoom", "Zoom", "Hold C to zoom (adjusts FOV).", ModuleCategory.CAMERA, true);
+        this.zoomFov = addSetting(new IntSetting("zoomFov", "Zoom FOV", "Lower = more zoom.", 30, 10, 70, 1));
+        getBindKeySetting().setValue(GLFW.GLFW_KEY_C);
+        getBindModeSetting().setValue(KeybindMode.HOLD);
+    }
+
+    @Override
+    protected void onEnable(MinecraftClient mc) {
+        startZoom(mc);
     }
 
     @Override
     public void onTick(MinecraftClient mc) {
-        if (mc.options == null || SaltClient.zoomKey == null) return;
-
-        boolean shouldZoom = SaltClient.zoomKey.isPressed();
-        if (shouldZoom && !SaltState.zooming) startZoom(mc);
-        if (SaltState.zooming && shouldZoom) applyZoom(mc);
-        if (!shouldZoom && SaltState.zooming) stopZoom(mc);
+        if (mc.options == null) return;
+        if (!SaltState.zooming) startZoom(mc);
+        applyZoom(mc);
     }
 
     @Override
     protected void onDisable(MinecraftClient mc) {
-        // Safety: if the module gets disabled while zooming, restore the old value.
         stopZoom(mc);
     }
 
+    public int getZoomFov() {
+        return zoomFov.getValue();
+    }
+
+    public void adjustZoomFov(int delta) {
+        zoomFov.setValue(zoomFov.getValue() + delta);
+        SaltClient.CONFIG.save(SaltClient.MODULES);
+    }
+
     private void startZoom(MinecraftClient mc) {
-        prevFov = mc.options.getFov().getValue();
+        if (mc == null || mc.options == null) return;
+        if (prevFov == null) prevFov = mc.options.getFov().getValue();
         SaltState.zooming = true;
-        SaltState.clampZoom();
     }
 
     private void applyZoom(MinecraftClient mc) {
-        SaltState.clampZoom();
-        mc.options.getFov().setValue(SaltState.zoomFov);
+        mc.options.getFov().setValue(zoomFov.getValue());
     }
 
     private void stopZoom(MinecraftClient mc) {
-        if (!SaltState.zooming) return;
+        if (mc == null || mc.options == null) return;
         SaltState.zooming = false;
-        if (mc.options == null || prevFov == null) return;
+        if (prevFov == null) return;
         mc.options.getFov().setValue(prevFov);
         prevFov = null;
     }

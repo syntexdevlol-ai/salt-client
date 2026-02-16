@@ -33,7 +33,7 @@ public final class SaltScreen extends Screen {
     private static final int TOGGLE_OFF = 0xFF51607A;
 
     private TextFieldWidget search;
-    private ModuleCategory selected = ModuleCategory.HUD;
+    private ModuleCategory selected = ModuleCategory.ALL;
     private double scroll;
 
     public SaltScreen() {
@@ -188,8 +188,12 @@ public final class SaltScreen extends Screen {
 
         List<Module> out = new ArrayList<>();
         for (Module m : SaltClient.MODULES.all()) {
-            if (m.getCategory() != selected) continue;
-            if (!q.isEmpty() && !m.getName().toLowerCase(Locale.ROOT).contains(q)) continue;
+            // If user is searching, show matches across all categories.
+            if (q.isEmpty()) {
+                if (selected != ModuleCategory.ALL && m.getCategory() != selected) continue;
+            } else {
+                if (!m.getName().toLowerCase(Locale.ROOT).contains(q)) continue;
+            }
             out.add(m);
         }
         return out;
@@ -268,19 +272,7 @@ public final class SaltScreen extends Screen {
     private void openSettings(Module m) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc == null) return;
-
-        String id = m.getId();
-        if ("zoom".equals(id)) {
-            mc.setScreen(new ZoomSettingsScreen(this));
-            return;
-        }
-
-        if ("customcrosshair".equals(id) || "crosshaireditor".equals(id)) {
-            mc.setScreen(new CrosshairEditorScreen(this));
-            return;
-        }
-
-        mc.setScreen(new ModuleInfoScreen(this, m));
+        mc.setScreen(new ModuleSettingsScreen(this, m));
     }
 
     @Override

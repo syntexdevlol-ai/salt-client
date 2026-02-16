@@ -25,7 +25,6 @@ public final class ScreenshotHelperModule extends Module {
 
         int x = 10;
         int y = 10;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFE6ECFF, 0xAA0E121A);
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "screenshothelper", text, x, y, 0xFFE6ECFF, 0xAA0E121A);
     }
 }
-

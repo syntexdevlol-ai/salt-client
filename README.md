@@ -11,13 +11,16 @@ Client-side HUD/utility mod intended to run fine on Pojav Launcher (Android) as 
 - Zoom (when Zoom module is enabled): hold `C`
 - Perspective (when enabled): hold `V`
 - FreeLook (when enabled): hold `B`
-- In the menu: left click = toggle, right click = settings (if available)
+- In the menu: left click = toggle, right click = module settings
 
 ## Notes
 - The full requested module list is present in the menu.
 - Most "performance/optimizer/culling" modules are implemented in a Pojav-friendly way via vanilla option tweaks (lite), plus a few safe mixins.
 - Client-side only (no packet spam / no risky automation).
-- To use the in-game custom crosshair, enable `CustomCrosshair` (then right click it for the editor).
+- Per-module settings system added (bool/int/enum/keybind + key mode).
+- HUD editor added (`HUDEditor` module): drag HUD elements, right-click to reset one, Reset All button.
+- Search now matches across all categories and `ALL` category is available.
+- To use in-game custom crosshair, enable `CustomCrosshair` and adjust it in right-click settings.
 
 ## Build (Termux / Linux / Windows)
 ```sh

@@ -3,6 +3,7 @@ package com.saltclient.module.impl.hud;
 import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.util.HudLayout;
+import com.saltclient.util.HudPos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -21,8 +22,11 @@ public final class KeystrokesModule extends Module {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return;
 
-        int x = 10;
-        int y = HudLayout.nextTopLeft(44);
+        int defaultX = 10;
+        int defaultY = HudLayout.nextTopLeft(44);
+        HudPos.Pos pos = HudPos.resolve("keystrokes", defaultX, defaultY);
+        int x = pos.x;
+        int y = pos.y;
 
         int s = 18;
         int g = 2;
@@ -33,6 +37,8 @@ public final class KeystrokesModule extends Module {
         drawKey(ctx, mc.options.leftKey.isPressed(), x, y + s + g, s, "A");
         drawKey(ctx, mc.options.backKey.isPressed(), x + s + g, y + s + g, s, "S");
         drawKey(ctx, mc.options.rightKey.isPressed(), x + (s + g) * 2, y + s + g, s, "D");
+
+        HudPos.recordBounds("keystrokes", x, y, s * 3 + g * 2, s * 2 + g);
     }
 
     private void drawKey(DrawContext ctx, boolean pressed, int x, int y, int size, String label) {

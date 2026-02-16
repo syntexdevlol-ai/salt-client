@@ -21,7 +21,7 @@ public final class FpsCounterModule extends Module {
         String text = HudCache.get("fpscounter:text", () -> mc.getCurrentFps() + " FPS");
 
         int y = HudLayout.nextBottomRight(14);
-        int x = mc.getWindow().getScaledWidth() - mc.textRenderer.getWidth(text) - 14;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFFFD66E, 0xAA0E121A);
+        int x = mc.getWindow().getScaledWidth() - (mc.textRenderer.getWidth(text) + 8) - 10;
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "fpscounter", text, x, y, 0xFFFFD66E, 0xAA0E121A);
     }
 }

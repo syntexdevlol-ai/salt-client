@@ -4,6 +4,7 @@ import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.util.HudCache;
 import com.saltclient.util.HudLayout;
+import com.saltclient.util.HudPos;
 import com.saltclient.util.HudRenderUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -24,14 +25,20 @@ public final class PlayerHudModule extends Module {
         String food = HudCache.get("playerhud:food", () -> "Food: " + p.getHungerManager().getFoodLevel());
         String armor = HudCache.get("playerhud:armor", () -> "Armor: " + p.getArmor());
 
-        int x = 10;
-        int y = HudLayout.nextTopLeft(14);
-        HudRenderUtil.textBox(ctx, mc.textRenderer, hp, x, y, 0xFFFF9AD5, 0xAA0E121A);
+        int maxW = Math.max(mc.textRenderer.getWidth(hp), Math.max(mc.textRenderer.getWidth(food), mc.textRenderer.getWidth(armor)));
+        int boxW = maxW + 8; // padX*2
+        int boxH = mc.textRenderer.fontHeight + 4; // padY*2
 
-        y = HudLayout.nextTopLeft(14);
-        HudRenderUtil.textBox(ctx, mc.textRenderer, food, x, y, 0xFFFFD66E, 0xAA0E121A);
+        int defaultX = 10;
+        int defaultY = HudLayout.nextTopLeft(14 * 3);
+        HudPos.Pos pos = HudPos.resolve("playerhud", defaultX, defaultY);
 
-        y = HudLayout.nextTopLeft(14);
-        HudRenderUtil.textBox(ctx, mc.textRenderer, armor, x, y, 0xFF8BE0FF, 0xAA0E121A);
+        int x = pos.x;
+        int y = pos.y;
+        HudRenderUtil.textBoxTL(ctx, mc.textRenderer, hp, x, y, 0xFFFF9AD5, 0xAA0E121A);
+        HudRenderUtil.textBoxTL(ctx, mc.textRenderer, food, x, y + 14, 0xFFFFD66E, 0xAA0E121A);
+        HudRenderUtil.textBoxTL(ctx, mc.textRenderer, armor, x, y + 28, 0xFF8BE0FF, 0xAA0E121A);
+
+        HudPos.recordBounds("playerhud", x, y, boxW, 28 + boxH);
     }
 }

@@ -40,7 +40,7 @@ public final class ReachDisplayModule extends Module {
         String text = HudCache.get("reachdisplay:text", () -> String.format("Reach: %.2f", dist));
 
         int y = HudLayout.nextBottomRight(14);
-        int x = mc.getWindow().getScaledWidth() - mc.textRenderer.getWidth(text) - 14;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFE6ECFF, 0xAA0E121A);
+        int x = mc.getWindow().getScaledWidth() - (mc.textRenderer.getWidth(text) + 8) - 10;
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "reachdisplay", text, x, y, 0xFFE6ECFF, 0xAA0E121A);
     }
 }

@@ -55,7 +55,7 @@ public final class ComboCounterModule extends Module {
 
         String text = "Combo: " + combo;
         int y = HudLayout.nextBottomRight(14);
-        int x = mc.getWindow().getScaledWidth() - mc.textRenderer.getWidth(text) - 14;
-        HudRenderUtil.textBox(ctx, mc.textRenderer, text, x, y, 0xFFFF9AD5, 0xAA0E121A);
+        int x = mc.getWindow().getScaledWidth() - (mc.textRenderer.getWidth(text) + 8) - 10;
+        HudRenderUtil.textBoxHud(ctx, mc.textRenderer, "combocounter", text, x, y, 0xFFFF9AD5, 0xAA0E121A);
     }
 }
