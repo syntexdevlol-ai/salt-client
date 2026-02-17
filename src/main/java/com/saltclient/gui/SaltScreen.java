@@ -607,7 +607,7 @@ public final class SaltScreen extends Screen {
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("RESET GUI"), l.resetX + l.resetW / 2, l.resetY + 5, scaleAlpha(TEXT, alpha));
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("EDIT HUD"), l.editX + l.editW / 2, l.editY + 5, scaleAlpha(TEXT, alpha));
 
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("saltclient  AL v1.1.4   Java 21  Fabric"), l.panelX + 10, l.footerY + 28, scaleAlpha(MUTED, alpha));
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("saltclient  AL v1.1.5   Java 21  Fabric"), l.panelX + 10, l.footerY + 28, scaleAlpha(MUTED, alpha));
 
         String right = statusText();
         int rightX = l.panelX + l.panelW - 10 - this.textRenderer.getWidth(right);

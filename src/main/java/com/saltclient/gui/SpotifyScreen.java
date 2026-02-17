@@ -68,7 +68,10 @@ public final class SpotifyScreen extends Screen {
         clientIdField = new TextFieldWidget(this.textRenderer, x, y, panelW - 40 - 268, 18, Text.literal(""));
         clientIdField.setMaxLength(64);
         clientIdField.setText(auth.clientId());
-        addSelectableChild(clientIdField);
+        clientIdField.setDrawsBackground(true);
+        clientIdField.setEditableColor(TEXT);
+        clientIdField.setUneditableColor(MUTED);
+        this.addDrawableChild(clientIdField);
 
         if (!auth.accessToken().isBlank() || !auth.refreshToken().isBlank()) {
             setStatus("Logged in", POSITIVE);
@@ -105,7 +108,10 @@ public final class SpotifyScreen extends Screen {
         int searchY = controlsY + 60;
         searchField = new TextFieldWidget(this.textRenderer, x, searchY, panelW - 40 - 78, 18, Text.literal(""));
         searchField.setMaxLength(120);
-        addSelectableChild(searchField);
+        searchField.setDrawsBackground(true);
+        searchField.setEditableColor(TEXT);
+        searchField.setUneditableColor(MUTED);
+        this.addDrawableChild(searchField);
 
         addDrawableChild(ButtonWidget.builder(UiFonts.text("Search"), b -> search())
             .dimensions(x + panelW - 40 - 70, searchY, 70, 18)
@@ -336,6 +342,20 @@ public final class SpotifyScreen extends Screen {
         if (searchField != null && searchField.mouseClicked(mouseX, mouseY, button)) return true;
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (clientIdField != null && clientIdField.charTyped(chr, modifiers)) return true;
+        if (searchField != null && searchField.charTyped(chr, modifiers)) return true;
+        return super.charTyped(chr, modifiers);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (clientIdField != null && clientIdField.keyPressed(keyCode, scanCode, modifiers)) return true;
+        if (searchField != null && searchField.keyPressed(keyCode, scanCode, modifiers)) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
