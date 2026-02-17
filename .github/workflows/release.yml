@@ -74,3 +74,4 @@ jobs:
             - Chat: ChatFilter, ChatHighlight, NameProtect, and Chat Opacity.
             - Fix: Spotify login screen text field now accepts typing normally.
             - Fix: Added a Paste button for Client ID (right-click paste doesn’t work on mobile).
+            - Fix: Correct dependency id (requires Fabric API `fabric-api`, not Fabric Loader).
