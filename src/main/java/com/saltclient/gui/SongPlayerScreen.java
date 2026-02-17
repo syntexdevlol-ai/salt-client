@@ -63,6 +63,10 @@ public final class SongPlayerScreen extends Screen {
             setStatus("Stopped", MUTED);
         }).dimensions(panelX + 206, panelY + panelH - 30, 80, 20).build());
 
+        addDrawableChild(ButtonWidget.builder(UiFonts.text("Spotify"), b -> {
+            if (this.client != null) this.client.setScreen(new SpotifyScreen(this));
+        }).dimensions(panelX + 294, panelY + panelH - 30, 90, 20).build());
+
         addDrawableChild(ButtonWidget.builder(UiFonts.text("Back"), b -> close())
             .dimensions(panelX + panelW - 100, panelY + panelH - 30, 80, 20)
             .build());

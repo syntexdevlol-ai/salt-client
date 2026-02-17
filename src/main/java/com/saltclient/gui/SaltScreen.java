@@ -62,6 +62,9 @@ public final class SaltScreen extends Screen {
     private static final int POSITIVE = 0xFF8DE39F;
     private static final int NEGATIVE = 0xFFFF8A8A;
 
+    private static final int SCROLL_BTN_SIZE = 20;
+    private static final int SCROLL_BTN_PAD = 6;
+
     private TextFieldWidget search;
     private TextFieldWidget configName;
     private TextFieldWidget configPath;
@@ -488,6 +491,40 @@ public final class SaltScreen extends Screen {
                 ctx.drawTextWithShadow(this.textRenderer, Text.literal("*"), x + colW - 12, y + 32, scaleAlpha(SUBTLE, alpha));
             }
         }
+
+        renderScrollButtons(ctx, mouseX, mouseY, l, alpha, maxScroll);
+    }
+
+    private void renderScrollButtons(DrawContext ctx, int mouseX, int mouseY, Layout l, float alpha, int maxScroll) {
+        int x = l.listX + l.listW - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+        int upY = l.listY + SCROLL_BTN_PAD;
+        int downY = l.listY + l.listH - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+
+        boolean canUp = maxScroll > 0 && moduleScroll > 0.5;
+        boolean canDown = maxScroll > 0 && moduleScroll < maxScroll - 0.5;
+
+        drawScrollButton(ctx, mouseX, mouseY, x, upY, "^", canUp, alpha);
+        drawScrollButton(ctx, mouseX, mouseY, x, downY, "v", canDown, alpha);
+    }
+
+    private void drawScrollButton(DrawContext ctx, int mouseX, int mouseY, int x, int y, String glyph, boolean enabled, float alpha) {
+        boolean hover = inside(mouseX, mouseY, x, y, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
+
+        // Always draw these buttons with enough contrast to be visible on mobile.
+        // Even when disabled (nothing to scroll), we still consume clicks to avoid toggling
+        // modules behind the buttons, so we give a subtle hover state too.
+        int bg;
+        if (enabled) bg = hover ? ACTION_BTN_HOVER : ACTION_BTN;
+        else bg = hover ? 0x772A334D : 0x552A334D;
+        int border = hover ? 0xFF6B8FD6 : 0xFF4A5D86;
+        int fg = enabled ? TEXT : (hover ? MUTED : SUBTLE);
+
+        ctx.fill(x, y, x + SCROLL_BTN_SIZE, y + SCROLL_BTN_SIZE, scaleAlpha(bg, alpha));
+        ctx.drawBorder(x, y, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE, scaleAlpha(border, alpha));
+
+        int gx = x + (SCROLL_BTN_SIZE - this.textRenderer.getWidth(glyph)) / 2;
+        int gy = y + (SCROLL_BTN_SIZE - this.textRenderer.fontHeight) / 2;
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(glyph), gx, gy, scaleAlpha(fg, alpha));
     }
 
     private void renderConfigManager(DrawContext ctx, int mouseX, int mouseY, Layout l, float alpha) {
@@ -570,7 +607,7 @@ public final class SaltScreen extends Screen {
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("RESET GUI"), l.resetX + l.resetW / 2, l.resetY + 5, scaleAlpha(TEXT, alpha));
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("EDIT HUD"), l.editX + l.editW / 2, l.editY + 5, scaleAlpha(TEXT, alpha));
 
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("saltclient  AL v1.1.2   Java 21  Fabric"), l.panelX + 10, l.footerY + 28, scaleAlpha(MUTED, alpha));
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("saltclient  AL v1.1.3   Java 21  Fabric"), l.panelX + 10, l.footerY + 28, scaleAlpha(MUTED, alpha));
 
         String right = statusText();
         int rightX = l.panelX + l.panelW - 10 - this.textRenderer.getWidth(right);
@@ -710,6 +747,26 @@ public final class SaltScreen extends Screen {
         int cardH = 64;
         int colW = (l.listW - (cols - 1) * gapModules) / cols;
 
+        // Mobile-friendly scroll buttons (instead of relying only on mouse wheel / touchpad).
+        int rows = (int) Math.ceil(list.size() / (double) cols);
+        int contentH = Math.max(0, rows * (cardH + gapModules) - gapModules);
+        int maxScroll = Math.max(0, contentH - l.listH);
+        int sx = l.listX + l.listW - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+        int upY = l.listY + SCROLL_BTN_PAD;
+        int downY = l.listY + l.listH - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+
+        // Consume clicks on the scroll buttons even if there's nothing to scroll,
+        // so users don't accidentally toggle modules behind them.
+        int step = cardH + gapModules;
+        if (inside(mouseX, mouseY, sx, upY, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE)) {
+            if (maxScroll > 0) moduleScroll = clamp(moduleScroll - step, 0, maxScroll);
+            return true;
+        }
+        if (inside(mouseX, mouseY, sx, downY, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE)) {
+            if (maxScroll > 0) moduleScroll = clamp(moduleScroll + step, 0, maxScroll);
+            return true;
+        }
+
         double localY = mouseY - l.listY + moduleScroll;
 
         int unitW = colW + gapModules;
@@ -730,6 +787,10 @@ public final class SaltScreen extends Screen {
         if (button == 1) {
             openSettings(m);
         } else {
+            if (!m.isImplemented()) {
+                setStatus("WIP module: " + m.getName(), false);
+                return true;
+            }
             m.toggle();
         }
         return true;

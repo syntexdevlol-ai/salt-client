@@ -6,6 +6,8 @@ import com.saltclient.module.impl.camera.FreeLookModule;
 import com.saltclient.module.impl.camera.PerspectiveModule;
 import com.saltclient.module.impl.crosshair.CrosshairEditorModule;
 import com.saltclient.module.impl.crosshair.CustomCrosshairModule;
+import com.saltclient.module.impl.chat.ChatOpacityModule;
+import com.saltclient.module.impl.chat.EmoteMenuModule;
 import com.saltclient.module.impl.movement.AutoSprintModule;
 import com.saltclient.module.impl.movement.InventoryWalkModule;
 import com.saltclient.module.impl.misc.AutoRespawnModule;
@@ -123,15 +125,30 @@ public final class ModuleManager {
         register(new HudEditorModule());
 
         // Chat
+        register(new ToggleModule("chatfilter", "ChatFilter", "Filter some common chat spam patterns.", ModuleCategory.CHAT));
+        register(new ToggleModule("chathighlight", "ChatHighlight", "Highlight messages that mention your name.", ModuleCategory.CHAT));
+        register(new ToggleModule("nameprotect", "NameProtect", "Replace your username in chat messages.", ModuleCategory.CHAT));
+        register(new ToggleModule("friendhighlight", "FriendHighlight", "Highlight friend names in chat (planned).", ModuleCategory.CHAT));
         register(new ToggleModule("chattimestamp", "ChatTimestamp", "Prefix chat with timestamps.", ModuleCategory.CHAT));
         register(new ToggleModule("chatcleaner", "ChatCleaner", "Deduplicate some chat spam.", ModuleCategory.CHAT));
         register(new ToggleModule("chatautogg", "ChatAutoGG", "Auto-send gg (best-effort).", ModuleCategory.CHAT));
+        register(new ChatOpacityModule());
+        register(new EmoteMenuModule());
 
         // Misc
         register(new GuiModule());
         register(new FontSelectorModule());
         register(new AsmrKeyboardModule());
         register(new AutoRespawnModule());
+        // Inventory / utility (mostly planned; kept off by default).
+        register(new SimpleModule("inventorysorter", "InventorySorter", "Sort inventory containers (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("autoarmor", "AutoArmor", "Auto-equip best armor (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("armorswap", "ArmorSwap", "Quick swap armor sets (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("inventorypreview", "InventoryPreview", "Preview inventory from HUD (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("shulkerpreview", "ShulkerPreview", "Preview shulker contents in tooltips (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("chestpreview", "ChestPreview", "Preview chest contents in tooltips (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("itemsearch", "ItemSearch", "Search items in inventories (planned).", ModuleCategory.MISC));
+        register(new SimpleModule("stackrefill", "StackRefill", "Refill hotbar stacks from inventory (planned).", ModuleCategory.MISC));
         register(new ToggleModule("serverswitcher", "ServerSwitcher", "Quick switch between saved servers (planned).", ModuleCategory.MISC));
         register(new ToggleModule("serverautoreconnect", "ServerAutoReconnect", "Auto reconnect after disconnect (planned).", ModuleCategory.MISC));
         register(new ToggleModule("disconnectnotifier", "DisconnectNotifier", "Notify when disconnected (planned).", ModuleCategory.MISC));
@@ -155,6 +172,9 @@ public final class ModuleManager {
         register(new PerspectiveModule());
         register(new FreeLookModule());
         register(new ZoomModule());
+        register(new SimpleModule("smoothzoom", "SmoothZoom", "Smooth zoom transitions (planned).", ModuleCategory.CAMERA));
+        register(new SimpleModule("dynamicfov", "DynamicFOV", "Smooth/adjust FOV effects (planned).", ModuleCategory.CAMERA));
+        register(new SimpleModule("cameraclip", "CameraClip", "Allow camera through blocks (planned).", ModuleCategory.CAMERA));
         register(new ToggleModule("zoomscroll", "ZoomScroll", "Adjust zoom with scroll.", ModuleCategory.CAMERA));
         register(new ToggleModule("nobobview", "NoBobView", "Disable view bobbing.", ModuleCategory.CAMERA));
         register(new ToggleModule("mousesmoothingtoggle", "MouseSmoothingToggle", "Toggle mouse smoothing (planned).", ModuleCategory.CAMERA));
@@ -174,6 +194,10 @@ public final class ModuleManager {
         // Visual
         register(new ToggleModule("lowfire", "LowFire", "Disable fire overlay.", ModuleCategory.VISUAL));
         register(new ToggleModule("clearwater", "ClearWater", "Disable underwater overlay + reduce water fog.", ModuleCategory.VISUAL));
+        register(new SimpleModule("customoutline", "CustomOutline", "Custom entity outline renderer (planned).", ModuleCategory.VISUAL));
+        register(new SimpleModule("glowesp", "GlowESP", "Glow-based ESP overlay (planned).", ModuleCategory.VISUAL));
+        register(new SimpleModule("playersilhouette", "PlayerSilhouette", "Silhouette overlay for players (planned).", ModuleCategory.VISUAL));
+        register(new SimpleModule("bettershadows", "BetterShadows", "Improved shadow rendering (planned).", ModuleCategory.VISUAL));
         register(new ToggleModule("nohurtcam", "NoHurtCam", "Disable hurt camera tilt.", ModuleCategory.VISUAL));
         register(new ToggleModule("timechanger", "TimeChanger", "Client-side time override.", ModuleCategory.VISUAL));
         register(new ToggleModule("weatherchanger", "WeatherChanger", "Client-side weather override.", ModuleCategory.VISUAL));

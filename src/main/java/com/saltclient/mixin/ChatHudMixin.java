@@ -34,6 +34,13 @@ public final class ChatHudMixin {
         String raw = message.getString();
         long now = System.currentTimeMillis();
 
+        if (SaltClient.MODULES.isEnabled("chatfilter")) {
+            if (shouldFilter(raw)) {
+                ci.cancel();
+                return;
+            }
+        }
+
         if (SaltClient.MODULES.isEnabled("chatcleaner")) {
             if (raw.equals(lastMessage) && (now - lastMessageMs) < 1500L) {
                 ci.cancel();
@@ -60,10 +67,32 @@ public final class ChatHudMixin {
         argsOnly = true,
         ordinal = 0
     )
-    private Text salt_timestamp(Text message) {
-        if (!SaltClient.MODULES.isEnabled("chattimestamp")) return message;
-        String ts = TS.format(LocalTime.now());
-        return Text.literal("[" + ts + "] ").formatted(Formatting.DARK_GRAY).append(message);
+    private Text salt_chatTweaks(Text message) {
+        Text out = message;
+        String raw = message.getString();
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        String selfName = mc != null && mc.player != null ? mc.player.getName().getString() : null;
+
+        if (SaltClient.MODULES.isEnabled("nameprotect") && selfName != null && !selfName.isBlank()) {
+            String replaced = raw.replace(selfName, "You");
+            out = Text.literal(replaced);
+            raw = replaced;
+        }
+
+        if (SaltClient.MODULES.isEnabled("chathighlight") && selfName != null && !selfName.isBlank()) {
+            String lo = raw.toLowerCase(Locale.ROOT);
+            if (lo.contains(selfName.toLowerCase(Locale.ROOT))) {
+                out = Text.literal("[!] ").formatted(Formatting.AQUA).append(out);
+            }
+        }
+
+        if (SaltClient.MODULES.isEnabled("chattimestamp")) {
+            String ts = TS.format(LocalTime.now());
+            out = Text.literal("[" + ts + "] ").formatted(Formatting.DARK_GRAY).append(out);
+        }
+
+        return out;
     }
 
     private static boolean shouldAutoGg(String raw) {
@@ -76,5 +105,16 @@ public final class ChatHudMixin {
             || s.contains("match over")
             || s.contains("winner");
     }
-}
 
+    private static boolean shouldFilter(String raw) {
+        if (raw == null || raw.isBlank()) return false;
+        String s = raw.toLowerCase(Locale.ROOT);
+
+        // Keep this conservative: only block very common link-spam patterns.
+        if (s.contains("discord.gg/")) return true;
+        if (s.contains("discord.com/invite/")) return true;
+        if (s.contains("free nitro")) return true;
+
+        return false;
+    }
+}
