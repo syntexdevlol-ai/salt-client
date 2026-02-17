@@ -65,7 +65,9 @@ public final class SpotifyScreen extends Screen {
 
         // Client ID (Spotify Developer app)
         SpotifyAuthStore.Auth auth = SpotifyAuthStore.load();
-        clientIdField = new TextFieldWidget(this.textRenderer, x, y, panelW - 40 - 268, 18, Text.literal(""));
+        // Reserve space for buttons on the right (Paste/Save/Login/Logout/Now).
+        int clientIdW = Math.max(140, panelW - 40 - 334);
+        clientIdField = new TextFieldWidget(this.textRenderer, x, y, clientIdW, 18, Text.literal(""));
         clientIdField.setMaxLength(64);
         clientIdField.setText(auth.clientId());
         clientIdField.setDrawsBackground(true);
@@ -79,6 +81,9 @@ public final class SpotifyScreen extends Screen {
             setStatus("Login: set redirect URI to " + SpotifyOAuth.REDIRECT_URI, MUTED);
         }
 
+        addDrawableChild(ButtonWidget.builder(UiFonts.text("Paste"), b -> pasteClientId())
+            .dimensions(x + panelW - 40 - 324, y, 60, 18)
+            .build());
         addDrawableChild(ButtonWidget.builder(UiFonts.text("Save"), b -> saveClientId())
             .dimensions(x + panelW - 40 - 258, y, 60, 18)
             .build());
@@ -106,15 +111,26 @@ public final class SpotifyScreen extends Screen {
 
         // Search
         int searchY = controlsY + 60;
-        searchField = new TextFieldWidget(this.textRenderer, x, searchY, panelW - 40 - 78, 18, Text.literal(""));
+        int innerRight = x + panelW - 40;
+        int searchBtnW = 70;
+        int pasteBtnW = 60;
+        int gap = 8;
+        int searchBtnX = innerRight - searchBtnW;
+        int pasteBtnX = searchBtnX - gap - pasteBtnW;
+        int searchW = Math.max(120, pasteBtnX - gap - x);
+
+        searchField = new TextFieldWidget(this.textRenderer, x, searchY, searchW, 18, Text.literal(""));
         searchField.setMaxLength(120);
         searchField.setDrawsBackground(true);
         searchField.setEditableColor(TEXT);
         searchField.setUneditableColor(MUTED);
         this.addDrawableChild(searchField);
 
+        addDrawableChild(ButtonWidget.builder(UiFonts.text("Paste"), b -> pasteSearch())
+            .dimensions(pasteBtnX, searchY, pasteBtnW, 18)
+            .build());
         addDrawableChild(ButtonWidget.builder(UiFonts.text("Search"), b -> search())
-            .dimensions(x + panelW - 40 - 70, searchY, 70, 18)
+            .dimensions(searchBtnX, searchY, searchBtnW, 18)
             .build());
 
         // Back
@@ -135,6 +151,43 @@ public final class SpotifyScreen extends Screen {
         }
         boolean ok = SpotifyAuthStore.saveClientId(id);
         setStatus(ok ? "Client ID saved" : "Save failed", ok ? POSITIVE : NEGATIVE);
+    }
+
+    private void pasteClientId() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc == null) return;
+
+        String clip = mc.keyboard.getClipboard();
+        if (clip == null) clip = "";
+        clip = clip.trim();
+        if (clip.isEmpty()) {
+            setStatus("Clipboard is empty", NEGATIVE);
+            return;
+        }
+
+        // Spotify Client IDs are 32-char hex strings. If the clipboard contains extra text,
+        // extract the first matching token.
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)\\b[0-9a-f]{32}\\b").matcher(clip);
+        if (m.find()) clip = m.group(0);
+
+        if (clientIdField != null) clientIdField.setText(clip);
+        setStatus("Pasted Client ID from clipboard", POSITIVE);
+    }
+
+    private void pasteSearch() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc == null) return;
+
+        String clip = mc.keyboard.getClipboard();
+        if (clip == null) clip = "";
+        clip = clip.trim();
+        if (clip.isEmpty()) {
+            setStatus("Clipboard is empty", NEGATIVE);
+            return;
+        }
+
+        if (searchField != null) searchField.setText(clip);
+        setStatus("Pasted search query from clipboard", POSITIVE);
     }
 
     private void login() {
@@ -318,6 +371,9 @@ public final class SpotifyScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Let Screen handle focus + widget clicks first (TextFieldWidget needs this for caret/typing).
+        if (super.mouseClicked(mouseX, mouseY, button)) return true;
+
         int panelW = Math.min(this.width - 40, 740);
         int panelH = Math.min(this.height - 40, 440);
         int panelX = (this.width - panelW) / 2;
@@ -337,25 +393,7 @@ public final class SpotifyScreen extends Screen {
                 return true;
             }
         }
-
-        if (clientIdField != null && clientIdField.mouseClicked(mouseX, mouseY, button)) return true;
-        if (searchField != null && searchField.mouseClicked(mouseX, mouseY, button)) return true;
-
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean charTyped(char chr, int modifiers) {
-        if (clientIdField != null && clientIdField.charTyped(chr, modifiers)) return true;
-        if (searchField != null && searchField.charTyped(chr, modifiers)) return true;
-        return super.charTyped(chr, modifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (clientIdField != null && clientIdField.keyPressed(keyCode, scanCode, modifiers)) return true;
-        if (searchField != null && searchField.keyPressed(keyCode, scanCode, modifiers)) return true;
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
 
     @Override
@@ -413,12 +451,6 @@ public final class SpotifyScreen extends Screen {
 
         ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Client ID (Spotify Developer app)"), panelX + 20, panelY + 54 - 12, MUTED);
         ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Redirect URI: " + SpotifyOAuth.REDIRECT_URI), panelX + 20, panelY + 54 + 20, MUTED);
-
-        // Text fields
-        if (clientIdField != null) clientIdField.render(ctx, mouseX, mouseY, delta);
-        if (searchField != null) {
-            searchField.render(ctx, mouseX, mouseY, delta);
-        }
 
         // Now playing
         String npLine = "Now playing: (unknown)";
