@@ -1,6 +1,7 @@
 package com.saltclient.gui;
 
 import com.saltclient.spotify.SpotifyAuthStore;
+import com.saltclient.spotify.SpotifyOAuth;
 import com.saltclient.spotify.SpotifyWebApi;
 import com.saltclient.util.UiFonts;
 import net.minecraft.client.MinecraftClient;
@@ -30,7 +31,7 @@ public final class SpotifyScreen extends Screen {
 
     private final Screen parent;
 
-    private TextFieldWidget tokenField;
+    private TextFieldWidget clientIdField;
     private TextFieldWidget searchField;
 
     private SpotifyWebApi.NowPlaying nowPlaying;
@@ -39,7 +40,7 @@ public final class SpotifyScreen extends Screen {
     private double scroll;
     private int selected = -1;
 
-    private String status = "Paste a Spotify access token to use remote control";
+    private String status = "Spotify login required";
     private int statusColor = MUTED;
 
     public SpotifyScreen(Screen parent) {
@@ -62,24 +63,34 @@ public final class SpotifyScreen extends Screen {
         int x = panelX + 20;
         int y = panelY + 54;
 
-        // Token
-        tokenField = new TextFieldWidget(this.textRenderer, x, y, panelW - 40 - 200, 18, Text.literal(""));
-        tokenField.setMaxLength(512);
-        tokenField.setText(SpotifyAuthStore.loadAccessToken());
-        addSelectableChild(tokenField);
+        // Client ID (Spotify Developer app)
+        SpotifyAuthStore.Auth auth = SpotifyAuthStore.load();
+        clientIdField = new TextFieldWidget(this.textRenderer, x, y, panelW - 40 - 268, 18, Text.literal(""));
+        clientIdField.setMaxLength(64);
+        clientIdField.setText(auth.clientId());
+        addSelectableChild(clientIdField);
 
-        addDrawableChild(ButtonWidget.builder(UiFonts.text("Save"), b -> saveToken())
-            .dimensions(x + panelW - 40 - 190, y, 60, 18)
+        if (!auth.accessToken().isBlank() || !auth.refreshToken().isBlank()) {
+            setStatus("Logged in", POSITIVE);
+        } else {
+            setStatus("Login: set redirect URI to " + SpotifyOAuth.REDIRECT_URI, MUTED);
+        }
+
+        addDrawableChild(ButtonWidget.builder(UiFonts.text("Save"), b -> saveClientId())
+            .dimensions(x + panelW - 40 - 258, y, 60, 18)
             .build());
-        addDrawableChild(ButtonWidget.builder(UiFonts.text("Clear"), b -> clearToken())
-            .dimensions(x + panelW - 40 - 124, y, 60, 18)
+        addDrawableChild(ButtonWidget.builder(UiFonts.text("Login"), b -> login())
+            .dimensions(x + panelW - 40 - 192, y, 60, 18)
+            .build());
+        addDrawableChild(ButtonWidget.builder(UiFonts.text("Logout"), b -> logout())
+            .dimensions(x + panelW - 40 - 126, y, 60, 18)
             .build());
         addDrawableChild(ButtonWidget.builder(UiFonts.text("Now"), b -> refreshNowPlaying())
             .dimensions(x + panelW - 40 - 58, y, 58, 18)
             .build());
 
         // Controls
-        int controlsY = y + 26;
+        int controlsY = y + 46;
         addDrawableChild(ButtonWidget.builder(Text.literal("<<"), b -> prev())
             .dimensions(x, controlsY, 52, 18)
             .build());
@@ -91,7 +102,7 @@ public final class SpotifyScreen extends Screen {
             .build());
 
         // Search
-        int searchY = controlsY + 30;
+        int searchY = controlsY + 60;
         searchField = new TextFieldWidget(this.textRenderer, x, searchY, panelW - 40 - 78, 18, Text.literal(""));
         searchField.setMaxLength(120);
         addSelectableChild(searchField);
@@ -106,35 +117,70 @@ public final class SpotifyScreen extends Screen {
             .build());
     }
 
-    private String token() {
-        return tokenField == null ? "" : tokenField.getText().trim();
+    private String clientId() {
+        return clientIdField == null ? "" : clientIdField.getText().trim();
     }
 
-    private void saveToken() {
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Token is empty", NEGATIVE);
+    private void saveClientId() {
+        String id = clientId();
+        if (id.isEmpty()) {
+            setStatus("Client ID is empty", NEGATIVE);
             return;
         }
-        boolean ok = SpotifyAuthStore.saveAccessToken(t);
-        setStatus(ok ? "Token saved" : "Save failed", ok ? POSITIVE : NEGATIVE);
+        boolean ok = SpotifyAuthStore.saveClientId(id);
+        setStatus(ok ? "Client ID saved" : "Save failed", ok ? POSITIVE : NEGATIVE);
     }
 
-    private void clearToken() {
-        SpotifyAuthStore.clear();
-        if (tokenField != null) tokenField.setText("");
-        setStatus("Token cleared", MUTED);
+    private void login() {
+        String id = clientId();
+        if (id.isEmpty()) {
+            setStatus("Paste your Spotify Client ID first", NEGATIVE);
+            return;
+        }
+        if (SpotifyOAuth.isLoginInProgress()) {
+            setStatus("Login already in progress", MUTED);
+            return;
+        }
+
+        setStatus("Starting Spotify login...", MUTED);
+        SpotifyOAuth.startLogin(id, new SpotifyOAuth.Listener() {
+            @Override
+            public void info(String msg) {
+                setStatus(msg, MUTED);
+            }
+
+            @Override
+            public void success(String msg) {
+                setStatus(msg, POSITIVE);
+            }
+
+            @Override
+            public void error(String msg) {
+                setStatus(msg, NEGATIVE);
+            }
+
+            @Override
+            public void onLoggedIn() {
+                refreshNowPlaying();
+            }
+        });
+    }
+
+    private void logout() {
+        SpotifyAuthStore.clearTokensKeepClientId();
+        nowPlaying = null;
+        results.clear();
+        selected = -1;
+        scroll = 0.0;
+        setStatus("Logged out", MUTED);
     }
 
     private void refreshNowPlaying() {
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Paste an access token first", NEGATIVE);
-            return;
-        }
-
         setStatus("Fetching now playing...", MUTED);
         runAsync(() -> {
+            String t = SpotifyOAuth.getValidAccessTokenBlocking();
+            if (t.isEmpty()) throw new IllegalStateException("Not logged in");
+
             SpotifyWebApi.NowPlaying np = SpotifyWebApi.getNowPlaying(t);
             onMain(() -> {
                 nowPlaying = np;
@@ -145,15 +191,12 @@ public final class SpotifyScreen extends Screen {
     }
 
     private void playPause() {
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Paste an access token first", NEGATIVE);
-            return;
-        }
-
         boolean playing = nowPlaying != null && nowPlaying.isPlaying();
         setStatus(playing ? "Pausing..." : "Resuming...", MUTED);
         runAsync(() -> {
+            String t = SpotifyOAuth.getValidAccessTokenBlocking();
+            if (t.isEmpty()) throw new IllegalStateException("Not logged in");
+
             if (playing) SpotifyWebApi.pause(t);
             else SpotifyWebApi.resume(t);
             SpotifyWebApi.NowPlaying np = SpotifyWebApi.getNowPlaying(t);
@@ -165,13 +208,11 @@ public final class SpotifyScreen extends Screen {
     }
 
     private void next() {
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Paste an access token first", NEGATIVE);
-            return;
-        }
         setStatus("Next...", MUTED);
         runAsync(() -> {
+            String t = SpotifyOAuth.getValidAccessTokenBlocking();
+            if (t.isEmpty()) throw new IllegalStateException("Not logged in");
+
             SpotifyWebApi.next(t);
             SpotifyWebApi.NowPlaying np = SpotifyWebApi.getNowPlaying(t);
             onMain(() -> {
@@ -182,13 +223,11 @@ public final class SpotifyScreen extends Screen {
     }
 
     private void prev() {
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Paste an access token first", NEGATIVE);
-            return;
-        }
         setStatus("Previous...", MUTED);
         runAsync(() -> {
+            String t = SpotifyOAuth.getValidAccessTokenBlocking();
+            if (t.isEmpty()) throw new IllegalStateException("Not logged in");
+
             SpotifyWebApi.previous(t);
             SpotifyWebApi.NowPlaying np = SpotifyWebApi.getNowPlaying(t);
             onMain(() -> {
@@ -199,12 +238,6 @@ public final class SpotifyScreen extends Screen {
     }
 
     private void search() {
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Paste an access token first", NEGATIVE);
-            return;
-        }
-
         String q = searchField == null ? "" : searchField.getText().trim();
         if (q.isEmpty()) {
             setStatus("Type a search query", NEGATIVE);
@@ -213,6 +246,9 @@ public final class SpotifyScreen extends Screen {
 
         setStatus("Searching...", MUTED);
         runAsync(() -> {
+            String t = SpotifyOAuth.getValidAccessTokenBlocking();
+            if (t.isEmpty()) throw new IllegalStateException("Not logged in");
+
             List<SpotifyWebApi.Track> found = SpotifyWebApi.searchTracks(t, q, 25);
             onMain(() -> {
                 results.clear();
@@ -227,15 +263,12 @@ public final class SpotifyScreen extends Screen {
     private void playSelected() {
         if (selected < 0 || selected >= results.size()) return;
 
-        String t = token();
-        if (t.isEmpty()) {
-            setStatus("Paste an access token first", NEGATIVE);
-            return;
-        }
-
         SpotifyWebApi.Track track = results.get(selected);
         setStatus("Playing via Spotify...", MUTED);
         runAsync(() -> {
+            String t = SpotifyOAuth.getValidAccessTokenBlocking();
+            if (t.isEmpty()) throw new IllegalStateException("Not logged in");
+
             SpotifyWebApi.playTrack(t, track.uri());
             SpotifyWebApi.NowPlaying np = SpotifyWebApi.getNowPlaying(t);
             onMain(() -> {
@@ -285,9 +318,9 @@ public final class SpotifyScreen extends Screen {
         int panelY = (this.height - panelH) / 2;
 
         int listX = panelX + 20;
-        int listY = panelY + 168;
+        int listY = panelY + 200;
         int listW = panelW - 40;
-        int listH = panelH - 220;
+        int listH = panelH - 260;
 
         if (inside(mouseX, mouseY, listX, listY, listW, listH)) {
             int rowH = 22;
@@ -299,7 +332,7 @@ public final class SpotifyScreen extends Screen {
             }
         }
 
-        if (tokenField != null && tokenField.mouseClicked(mouseX, mouseY, button)) return true;
+        if (clientIdField != null && clientIdField.mouseClicked(mouseX, mouseY, button)) return true;
         if (searchField != null && searchField.mouseClicked(mouseX, mouseY, button)) return true;
 
         return super.mouseClicked(mouseX, mouseY, button);
@@ -313,9 +346,9 @@ public final class SpotifyScreen extends Screen {
         int panelY = (this.height - panelH) / 2;
 
         int listX = panelX + 20;
-        int listY = panelY + 168;
+        int listY = panelY + 200;
         int listW = panelW - 40;
-        int listH = panelH - 220;
+        int listH = panelH - 260;
 
         if (inside(mouseX, mouseY, listX, listY, listW, listH)) {
             int rowH = 22;
@@ -347,19 +380,22 @@ public final class SpotifyScreen extends Screen {
         int panelH = Math.min(this.height - 40, 440);
         int panelX = (this.width - panelW) / 2;
         int panelY = (this.height - panelH) / 2;
+        int baseY = panelY + 54;
+        int controlsY = baseY + 46;
+        int nowY = controlsY + 24;
+        int searchLabelY = controlsY + 48;
 
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL);
         ctx.drawBorder(panelX, panelY, panelW, panelH, PANEL_BORDER);
 
         ctx.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, panelY + 14, TEXT);
-        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Spotify Web API remote control (plays on your active Spotify device)"), panelX + 20, panelY + 34, MUTED);
+        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Spotify remote control (plays on your active Spotify device)"), panelX + 20, panelY + 34, MUTED);
 
-        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Access Token"), panelX + 20, panelY + 54 - 12, MUTED);
+        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Client ID (Spotify Developer app)"), panelX + 20, panelY + 54 - 12, MUTED);
+        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Redirect URI: " + SpotifyOAuth.REDIRECT_URI), panelX + 20, panelY + 54 + 20, MUTED);
 
         // Text fields
-        if (tokenField != null) {
-            tokenField.render(ctx, mouseX, mouseY, delta);
-        }
+        if (clientIdField != null) clientIdField.render(ctx, mouseX, mouseY, delta);
         if (searchField != null) {
             searchField.render(ctx, mouseX, mouseY, delta);
         }
@@ -374,16 +410,16 @@ public final class SpotifyScreen extends Screen {
             if (!right.isEmpty()) left = left + " - " + right;
             npLine = "Now playing: " + left + (nowPlaying.isPlaying() ? " [playing]" : " [paused]");
         }
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal(npLine), panelX + 20, panelY + 84, TEXT);
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(npLine), panelX + 20, nowY, TEXT);
 
         // Search label
-        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Search Tracks"), panelX + 20, panelY + 114, MUTED);
+        ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Search Tracks"), panelX + 20, searchLabelY, MUTED);
 
         // Results list
         int listX = panelX + 20;
-        int listY = panelY + 168;
+        int listY = panelY + 200;
         int listW = panelW - 40;
-        int listH = panelH - 220;
+        int listH = panelH - 260;
 
         ctx.fill(listX, listY, listX + listW, listY + listH, 0x66131A2D);
         ctx.drawBorder(listX, listY, listW, listH, 0xFF334568);

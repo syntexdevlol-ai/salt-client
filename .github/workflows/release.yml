@@ -44,5 +44,5 @@ jobs:
           body: |
             ### Changelog
             - GUI: Scroll up/down buttons always visible (touch-friendly) and won’t toggle modules behind them.
-            - Music Player: Spotify remote-control screen (Spotify Web API; no in-game streaming).
+            - Spotify: In-client login flow (OAuth) + auto-refresh tokens (Spotify Web API; no in-game streaming).
             - Chat: ChatFilter, ChatHighlight, NameProtect, and Chat Opacity.
