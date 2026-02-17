@@ -24,7 +24,7 @@ jobs:
           cache: gradle
 
       - name: Build
-        run: ./gradlew build --no-daemon
+        run: sh ./gradlew build --no-daemon
 
       - name: Prepare Assets
         shell: bash
