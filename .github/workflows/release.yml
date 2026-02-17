@@ -1,0 +1,48 @@
+name: Release JAR
+
+on:
+  push:
+    tags:
+      - "salt-client-additions.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Build
+        run: ./gradlew build --no-daemon
+
+      - name: Prepare Assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#salt-client-additions.}"
+
+          cp "build/libs/salt-client-${VERSION}.jar" "salt-client-additions.${VERSION}.jar"
+          cp "build/libs/salt-client-${VERSION}-sources.jar" "salt-client-additions.${VERSION}-sources.jar"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            salt-client-additions.*.jar
+          body: |
+            ### Changelog
+            - GUI: Scroll up/down buttons always visible (touch-friendly) and won’t toggle modules behind them.
+            - Music Player: Spotify remote-control screen (Spotify Web API; no in-game streaming).
+            - Chat: ChatFilter, ChatHighlight, NameProtect, and Chat Opacity.
