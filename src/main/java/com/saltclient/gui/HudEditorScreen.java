@@ -78,6 +78,10 @@ public final class HudEditorScreen extends Screen {
 
         String hoverId = findHoveredId(mouseX, mouseY);
 
+        if (HudPos.allBounds().isEmpty()) {
+            ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Enable HUD modules, then drag them here."), this.width / 2, this.height / 2, MUTED);
+        }
+
         for (Map.Entry<String, HudPos.Bounds> e : HudPos.allBounds().entrySet()) {
             String id = e.getKey();
             HudPos.Bounds b = e.getValue();

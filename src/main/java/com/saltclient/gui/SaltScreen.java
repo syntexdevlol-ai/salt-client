@@ -5,6 +5,7 @@ import com.saltclient.module.Module;
 import com.saltclient.module.ModuleCategory;
 import com.saltclient.util.GuiSettings;
 import com.saltclient.util.HudPos;
+import com.saltclient.util.UiDraw;
 import com.saltclient.util.UiFonts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -20,39 +21,41 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class SaltScreen extends Screen {
-    private static final int BG = 0xA8060A14;
-    private static final int PANEL = 0xE0101626;
-    private static final int PANEL_BORDER = 0xFF2A3553;
+    // Light (Lunar-ish) palette.
+    // Glassy dark palette inspired by modern PvP clients.
+    private static final int BG = 0xB013233B;
+    private static final int PANEL = 0xF2192233;
+    private static final int PANEL_BORDER = 0xFF3B82F6;
 
-    private static final int HEADER = 0xCC1A2034;
-    private static final int SIDEBAR = 0xB2161C2E;
-    private static final int FOOTER = 0xCC13192B;
+    private static final int HEADER = 0xFF111827;
+    private static final int SIDEBAR = 0xFF0F172A;
+    private static final int FOOTER = 0xFF111827;
 
-    private static final int SEARCH_BG = 0x99232B43;
-    private static final int SEARCH_BORDER = 0xFF344266;
+    private static final int SEARCH_BG = 0xFF111827;
+    private static final int SEARCH_BORDER = 0xFF1F2937;
 
-    private static final int SIDEBAR_ROW = 0x4427314B;
-    private static final int SIDEBAR_ROW_HOVER = 0x66303C59;
-    private static final int SIDEBAR_ROW_ACTIVE = 0xAA36508A;
-    private static final int SIDEBAR_ACCENT = 0xFF4DA0FF;
+    private static final int SIDEBAR_ROW = 0x00000000;
+    private static final int SIDEBAR_ROW_HOVER = 0x26FFFFFF;
+    private static final int SIDEBAR_ROW_ACTIVE = 0x332563EB;
+    private static final int SIDEBAR_ACCENT = 0xFF38BDF8;
 
-    private static final int CARD = 0xAA1C2438;
-    private static final int CARD_HOVER = 0xCC22304B;
-    private static final int CARD_BORDER = 0xFF2B3959;
-    private static final int CARD_DISABLED = 0xAA141C2B;
+    private static final int CARD = 0xFF111827;
+    private static final int CARD_HOVER = 0xFF0B1220;
+    private static final int CARD_BORDER = 0xFF1F2937;
+    private static final int CARD_DISABLED = 0xFF0B1220;
 
-    private static final int TEXT = 0xFFE9EEFF;
-    private static final int MUTED = 0xFFA1AFD4;
-    private static final int SUBTLE = 0xFF7F8DB1;
+    private static final int TEXT = 0xFFE2E8F0;
+    private static final int MUTED = 0xFFA5B4FC;
+    private static final int SUBTLE = 0xFF94A3B8;
 
-    private static final int TOGGLE_ON = 0xFF4DA0FF;
-    private static final int TOGGLE_OFF = 0xFF42506D;
+    private static final int TOGGLE_ON = 0xFF38BDF8;
+    private static final int TOGGLE_OFF = 0xFF1F2937;
 
-    private static final int HEADER_BUTTON = 0xAA303B59;
-    private static final int HEADER_BUTTON_HOVER = 0xCC3A496B;
+    private static final int HEADER_BUTTON = 0xFF1F2937;
+    private static final int HEADER_BUTTON_HOVER = 0xFF273548;
 
-    private static final int ACTION_BTN = 0xAA2A334D;
-    private static final int ACTION_BTN_HOVER = 0xCC364463;
+    private static final int ACTION_BTN = 0xFF1F2937;
+    private static final int ACTION_BTN_HOVER = 0xFF273548;
 
     private static final int ACTION_SIZE = 22;
     private static final int ACTION_GAP = 6;
@@ -64,6 +67,10 @@ public final class SaltScreen extends Screen {
 
     private static final int SCROLL_BTN_SIZE = 20;
     private static final int SCROLL_BTN_PAD = 6;
+
+    private static final int R_PANEL = 14;
+    private static final int R_CARD = 12;
+    private static final int R_BTN = 10;
 
     private TextFieldWidget search;
     private TextFieldWidget configName;
@@ -329,16 +336,34 @@ public final class SaltScreen extends Screen {
 
         ctx.fill(0, 0, this.width, this.height, scaleAlpha(BG, open));
 
-        ctx.fill(l.panelX, l.panelY, l.panelX + l.panelW, l.panelY + l.panelH, scaleAlpha(PANEL, open));
-        ctx.drawBorder(l.panelX, l.panelY, l.panelW, l.panelH, scaleAlpha(PANEL_BORDER, open));
+        UiDraw.panelRounded(ctx, l.panelX, l.panelY, l.panelW, l.panelH, R_PANEL, scaleAlpha(PANEL, open), scaleAlpha(PANEL_BORDER, open));
 
-        ctx.fill(l.panelX, l.panelY, l.panelX + l.panelW, l.panelY + l.headerH, scaleAlpha(HEADER, open));
-        ctx.fill(l.sidebarX, l.sidebarY, l.sidebarX + l.sidebarW, l.sidebarY + l.sidebarH, scaleAlpha(SIDEBAR, open));
-        ctx.fill(l.panelX, l.footerY, l.panelX + l.panelW, l.panelY + l.panelH, scaleAlpha(FOOTER, open));
+        int innerX = l.panelX + 1;
+        int innerY = l.panelY + 1;
+        int innerW = l.panelW - 2;
+        int innerH = l.panelH - 2;
 
-        ctx.fill(l.panelX, l.panelY + l.headerH, l.panelX + l.panelW, l.panelY + l.headerH + 1, scaleAlpha(0x55384A73, open));
-        ctx.fill(l.sidebarX + l.sidebarW + 5, l.contentY, l.sidebarX + l.sidebarW + 6, l.footerY - 2, scaleAlpha(0x33384A73, open));
-        ctx.fill(l.panelX, l.footerY - 1, l.panelX + l.panelW, l.footerY, scaleAlpha(0x55384A73, open));
+        // Header with rounded top corners, squared bottom edge.
+        int headerH = Math.min(l.headerH, innerH);
+        UiDraw.fillRounded(ctx, innerX, innerY, innerX + innerW, innerY + headerH, Math.max(0, R_PANEL - 1), scaleAlpha(HEADER, open));
+        int headerSquareY = Math.max(innerY, innerY + headerH - (R_PANEL - 1));
+        ctx.fill(innerX, headerSquareY, innerX + innerW, innerY + headerH, scaleAlpha(HEADER, open));
+
+        // Sidebar box (rounded).
+        UiDraw.panelRounded(ctx, l.sidebarX, l.sidebarY, l.sidebarW, l.sidebarH, R_CARD, scaleAlpha(SIDEBAR, open), scaleAlpha(CARD_BORDER, open));
+
+        // Footer with rounded bottom corners, squared top edge.
+        int footerY = Math.max(innerY, l.footerY);
+        int footerH = innerY + innerH - footerY;
+        if (footerH > 0) {
+            UiDraw.fillRounded(ctx, innerX, footerY, innerX + innerW, footerY + footerH, Math.max(0, R_PANEL - 1), scaleAlpha(FOOTER, open));
+            int footerSquareH = Math.min(footerH, Math.max(0, R_PANEL - 1));
+            ctx.fill(innerX, footerY, innerX + innerW, footerY + footerSquareH, scaleAlpha(FOOTER, open));
+        }
+
+        ctx.fill(l.panelX, l.panelY + l.headerH, l.panelX + l.panelW, l.panelY + l.headerH + 1, scaleAlpha(0x66CBD5E1, open));
+        ctx.fill(l.sidebarX + l.sidebarW + 5, l.contentY, l.sidebarX + l.sidebarW + 6, l.footerY - 2, scaleAlpha(0x40CBD5E1, open));
+        ctx.fill(l.panelX, l.footerY - 1, l.panelX + l.panelW, l.footerY, scaleAlpha(0x66CBD5E1, open));
 
         renderHeader(ctx, mouseX, mouseY, l, open);
         renderSidebar(ctx, mouseX, mouseY, l, open);
@@ -355,13 +380,13 @@ public final class SaltScreen extends Screen {
     }
 
     private void renderHeader(DrawContext ctx, int mouseX, int mouseY, Layout l, float alpha) {
-        ctx.fill(l.panelX + 14, l.panelY + 14, l.panelX + 46, l.panelY + 46, scaleAlpha(0x9942537B, alpha));
-        ctx.drawBorder(l.panelX + 14, l.panelY + 14, 32, 32, scaleAlpha(0xFF566A97, alpha));
-        ctx.drawTextWithShadow(this.textRenderer, Text.literal("S"), l.panelX + 27, l.panelY + 25, scaleAlpha(TEXT, alpha));
+        int logoFill = 0xFFE0F2FE;
+        int logoBorder = 0xFF93C5FD;
+        UiDraw.panelRounded(ctx, l.panelX + 14, l.panelY + 14, 32, 32, R_BTN, scaleAlpha(logoFill, alpha), scaleAlpha(logoBorder, alpha));
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("S"), l.panelX + 27, l.panelY + 25, scaleAlpha(SIDEBAR_ACCENT, alpha));
         ctx.drawTextWithShadow(this.textRenderer, this.title, l.panelX + 54, l.panelY + 22, scaleAlpha(TEXT, alpha));
 
-        ctx.fill(l.searchX, l.searchY, l.searchX + l.searchW, l.searchY + l.searchH, scaleAlpha(SEARCH_BG, alpha));
-        ctx.drawBorder(l.searchX, l.searchY, l.searchW, l.searchH, scaleAlpha(SEARCH_BORDER, alpha));
+        UiDraw.panelRounded(ctx, l.searchX, l.searchY, l.searchW, l.searchH, R_BTN, scaleAlpha(SEARCH_BG, alpha), scaleAlpha(SEARCH_BORDER, alpha));
 
         if (configTab) {
             ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Config section"), l.searchX + 12, l.searchY + 10, scaleAlpha(MUTED, alpha));
@@ -374,15 +399,14 @@ public final class SaltScreen extends Screen {
             int by = l.actionY;
             boolean hover = inside(mouseX, mouseY, bx, by, ACTION_SIZE, ACTION_SIZE);
             int fill = hover ? HEADER_BUTTON_HOVER : HEADER_BUTTON;
-            ctx.fill(bx, by, bx + ACTION_SIZE, by + ACTION_SIZE, scaleAlpha(fill, alpha));
-            ctx.drawBorder(bx, by, ACTION_SIZE, ACTION_SIZE, scaleAlpha(0xFF4A5C88, alpha));
+            UiDraw.panelRounded(ctx, bx, by, ACTION_SIZE, ACTION_SIZE, R_BTN, scaleAlpha(fill, alpha), scaleAlpha(SEARCH_BORDER, alpha));
 
             String glyph = switch (i) {
                 case 0 -> "<"; // back
                 case 1 -> "I"; // installers
                 case 2 -> "M"; // music
-                case 3 -> "*"; // misc
-                default -> "U"; // user
+                case 3 -> "*"; // misc / configs
+                default -> "C"; // chat
             };
             int gx = bx + (ACTION_SIZE - this.textRenderer.getWidth(glyph)) / 2;
             int gy = by + (ACTION_SIZE - this.textRenderer.fontHeight) / 2;
@@ -402,7 +426,7 @@ public final class SaltScreen extends Screen {
             boolean active = !configTab && c == selected;
 
             int bg = active ? SIDEBAR_ROW_ACTIVE : (hover ? SIDEBAR_ROW_HOVER : SIDEBAR_ROW);
-            ctx.fill(x, y, x + w, y + rowH, scaleAlpha(bg, alpha));
+            UiDraw.fillRounded(ctx, x, y, x + w, y + rowH, R_BTN, scaleAlpha(bg, alpha));
             if (active) {
                 ctx.fill(x, y, x + 3, y + rowH, scaleAlpha(SIDEBAR_ACCENT, alpha));
             }
@@ -423,7 +447,7 @@ public final class SaltScreen extends Screen {
         boolean active = configTab;
 
         int bg = active ? SIDEBAR_ROW_ACTIVE : (hover ? SIDEBAR_ROW_HOVER : SIDEBAR_ROW);
-        ctx.fill(x, y, x + w, y + rowH, scaleAlpha(bg, alpha));
+        UiDraw.fillRounded(ctx, x, y, x + w, y + rowH, R_BTN, scaleAlpha(bg, alpha));
         if (active) {
             ctx.fill(x, y, x + 3, y + rowH, scaleAlpha(SIDEBAR_ACCENT, alpha));
         }
@@ -460,8 +484,7 @@ public final class SaltScreen extends Screen {
             boolean hover = inside(mouseX, mouseY, x, y, colW, cardH);
             int bg = m.isImplemented() ? (hover ? CARD_HOVER : CARD) : CARD_DISABLED;
 
-            ctx.fill(x, y, x + colW, y + cardH, scaleAlpha(bg, alpha));
-            ctx.drawBorder(x, y, colW, cardH, scaleAlpha(CARD_BORDER, alpha));
+            UiDraw.panelRounded(ctx, x, y, colW, cardH, R_CARD, scaleAlpha(bg, alpha), scaleAlpha(CARD_BORDER, alpha));
 
             ctx.drawTextWithShadow(this.textRenderer, Text.literal(m.getName()), x + 10, y + 10, scaleAlpha(TEXT, alpha));
 
@@ -476,19 +499,27 @@ public final class SaltScreen extends Screen {
 
             float toggle = animateToggle(m);
             int toggleColor = blend(TOGGLE_OFF, TOGGLE_ON, toggle);
-            ctx.fill(tx, ty, tx + tw, ty + th, scaleAlpha(toggleColor, alpha));
-            ctx.drawBorder(tx, ty, tw, th, scaleAlpha(0xFF45587C, alpha));
+            UiDraw.panelRounded(ctx, tx, ty, tw, th, th / 2, scaleAlpha(toggleColor, alpha), scaleAlpha(SEARCH_BORDER, alpha));
 
             int knob = 14;
             int range = tw - knob - 4;
             int kx = tx + 2 + Math.round(range * toggle);
             int ky = ty + 2;
-            ctx.fill(kx, ky, kx + knob, ky + knob, scaleAlpha(0xFFE7ECFF, alpha));
+            UiDraw.fillRounded(ctx, kx, ky, kx + knob, ky + knob, knob / 2, scaleAlpha(0xFFFFFFFF, alpha));
+
+            // Settings button (mobile-friendly alternative to right click).
+            int sb = 18;
+            int sx = x + colW - sb - 10;
+            int sy = y + cardH - sb - 10;
+            int sFill = hover ? ACTION_BTN_HOVER : ACTION_BTN;
+            UiDraw.panelRounded(ctx, sx, sy, sb, sb, R_BTN, scaleAlpha(sFill, alpha), scaleAlpha(SEARCH_BORDER, alpha));
+            String sg = "S";
+            int sgx = sx + (sb - this.textRenderer.getWidth(sg)) / 2;
+            int sgy = sy + (sb - this.textRenderer.fontHeight) / 2;
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(sg), sgx, sgy, scaleAlpha(MUTED, alpha));
 
             if (!m.isImplemented()) {
                 ctx.drawTextWithShadow(this.textRenderer, Text.literal("WIP"), x + colW - 36, y + 32, scaleAlpha(SUBTLE, alpha));
-            } else if (m.hasSettings()) {
-                ctx.drawTextWithShadow(this.textRenderer, Text.literal("*"), x + colW - 12, y + 32, scaleAlpha(SUBTLE, alpha));
             }
         }
 
@@ -496,15 +527,16 @@ public final class SaltScreen extends Screen {
     }
 
     private void renderScrollButtons(DrawContext ctx, int mouseX, int mouseY, Layout l, float alpha, int maxScroll) {
-        int x = l.listX + l.listW - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
-        int upY = l.listY + SCROLL_BTN_PAD;
-        int downY = l.listY + l.listH - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+        // Mobile-friendly scroll buttons in the footer (always visible).
+        int y = l.footerY + (l.footerH - SCROLL_BTN_SIZE) / 2;
+        int downX = l.listX + l.listW - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+        int upX = downX - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
 
         boolean canUp = maxScroll > 0 && moduleScroll > 0.5;
         boolean canDown = maxScroll > 0 && moduleScroll < maxScroll - 0.5;
 
-        drawScrollButton(ctx, mouseX, mouseY, x, upY, "^", canUp, alpha);
-        drawScrollButton(ctx, mouseX, mouseY, x, downY, "v", canDown, alpha);
+        drawScrollButton(ctx, mouseX, mouseY, upX, y, "^", canUp, alpha);
+        drawScrollButton(ctx, mouseX, mouseY, downX, y, "v", canDown, alpha);
     }
 
     private void drawScrollButton(DrawContext ctx, int mouseX, int mouseY, int x, int y, String glyph, boolean enabled, float alpha) {
@@ -515,12 +547,11 @@ public final class SaltScreen extends Screen {
         // modules behind the buttons, so we give a subtle hover state too.
         int bg;
         if (enabled) bg = hover ? ACTION_BTN_HOVER : ACTION_BTN;
-        else bg = hover ? 0x772A334D : 0x552A334D;
-        int border = hover ? 0xFF6B8FD6 : 0xFF4A5D86;
-        int fg = enabled ? TEXT : (hover ? MUTED : SUBTLE);
+        else bg = hover ? 0xFFE2E8F0 : 0xFFF1F5F9;
+        int border = hover ? SIDEBAR_ACCENT : SEARCH_BORDER;
+        int fg = enabled ? TEXT : SUBTLE;
 
-        ctx.fill(x, y, x + SCROLL_BTN_SIZE, y + SCROLL_BTN_SIZE, scaleAlpha(bg, alpha));
-        ctx.drawBorder(x, y, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE, scaleAlpha(border, alpha));
+        UiDraw.panelRounded(ctx, x, y, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE, R_BTN, scaleAlpha(bg, alpha), scaleAlpha(border, alpha));
 
         int gx = x + (SCROLL_BTN_SIZE - this.textRenderer.getWidth(glyph)) / 2;
         int gy = y + (SCROLL_BTN_SIZE - this.textRenderer.fontHeight) / 2;
@@ -528,8 +559,7 @@ public final class SaltScreen extends Screen {
     }
 
     private void renderConfigManager(DrawContext ctx, int mouseX, int mouseY, Layout l, float alpha) {
-        ctx.fill(l.listX, l.listY, l.listX + l.listW, l.listY + l.listH, scaleAlpha(0x551A2238, alpha));
-        ctx.drawBorder(l.listX, l.listY, l.listW, l.listH, scaleAlpha(CARD_BORDER, alpha));
+        UiDraw.panelRounded(ctx, l.listX, l.listY, l.listW, l.listH, R_CARD, scaleAlpha(0xFFF8FAFC, alpha), scaleAlpha(CARD_BORDER, alpha));
 
         ctx.drawTextWithShadow(this.textRenderer, Text.literal("Name"), l.listX + 12, l.cfgNameY + 6, scaleAlpha(TEXT, alpha));
         drawInputShell(ctx, l.cfgNameX, l.cfgNameY, l.cfgNameW, l.cfgNameH, alpha);
@@ -544,14 +574,13 @@ public final class SaltScreen extends Screen {
 
         ctx.drawTextWithShadow(
             this.textRenderer,
-            Text.literal("Double-click profile to load. Right-click any module card for settings."),
+            Text.literal("Double-click profile to load. Use the 'S' button on cards for settings."),
             l.cfgListX,
             l.cfgListY - 11,
             scaleAlpha(MUTED, alpha)
         );
 
-        ctx.fill(l.cfgListX, l.cfgListY, l.cfgListX + l.cfgListW, l.cfgListY + l.cfgListH, scaleAlpha(0x66131A2D, alpha));
-        ctx.drawBorder(l.cfgListX, l.cfgListY, l.cfgListW, l.cfgListH, scaleAlpha(0xFF334568, alpha));
+        UiDraw.panelRounded(ctx, l.cfgListX, l.cfgListY, l.cfgListW, l.cfgListH, R_BTN, scaleAlpha(SEARCH_BG, alpha), scaleAlpha(SEARCH_BORDER, alpha));
 
         int rowH = 22;
         int visibleRows = Math.max(1, l.cfgListH / rowH);
@@ -573,10 +602,10 @@ public final class SaltScreen extends Screen {
             boolean selectedName = configName != null && name.equalsIgnoreCase(configName.getText().trim());
 
             int rowColor;
-            if (selectedName) rowColor = 0xAA35518A;
-            else rowColor = hover ? 0x66304A78 : 0x3322304A;
+            if (selectedName) rowColor = 0x260B63F6;
+            else rowColor = hover ? 0x140F172A : 0x00000000;
 
-            ctx.fill(l.cfgListX + 2, y, l.cfgListX + l.cfgListW - 2, y + rowH, scaleAlpha(rowColor, alpha));
+            UiDraw.fillRounded(ctx, l.cfgListX + 2, y, l.cfgListX + l.cfgListW - 2, y + rowH, R_BTN, scaleAlpha(rowColor, alpha));
             ctx.drawTextWithShadow(this.textRenderer, Text.literal(name), l.cfgListX + 10, y + 7, scaleAlpha(TEXT, alpha));
         }
 
@@ -599,10 +628,8 @@ public final class SaltScreen extends Screen {
         boolean hoverReset = inside(mouseX, mouseY, l.resetX, l.resetY, l.resetW, l.resetH);
         boolean hoverEdit = inside(mouseX, mouseY, l.editX, l.editY, l.editW, l.editH);
 
-        ctx.fill(l.resetX, l.resetY, l.resetX + l.resetW, l.resetY + l.resetH, scaleAlpha(hoverReset ? ACTION_BTN_HOVER : ACTION_BTN, alpha));
-        ctx.fill(l.editX, l.editY, l.editX + l.editW, l.editY + l.editH, scaleAlpha(hoverEdit ? ACTION_BTN_HOVER : ACTION_BTN, alpha));
-        ctx.drawBorder(l.resetX, l.resetY, l.resetW, l.resetH, scaleAlpha(0xFF4A5D86, alpha));
-        ctx.drawBorder(l.editX, l.editY, l.editW, l.editH, scaleAlpha(0xFF4A5D86, alpha));
+        UiDraw.panelRounded(ctx, l.resetX, l.resetY, l.resetW, l.resetH, R_BTN, scaleAlpha(hoverReset ? ACTION_BTN_HOVER : ACTION_BTN, alpha), scaleAlpha(SEARCH_BORDER, alpha));
+        UiDraw.panelRounded(ctx, l.editX, l.editY, l.editW, l.editH, R_BTN, scaleAlpha(hoverEdit ? ACTION_BTN_HOVER : ACTION_BTN, alpha), scaleAlpha(SEARCH_BORDER, alpha));
 
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("RESET GUI"), l.resetX + l.resetW / 2, l.resetY + 5, scaleAlpha(TEXT, alpha));
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("EDIT HUD"), l.editX + l.editW / 2, l.editY + 5, scaleAlpha(TEXT, alpha));
@@ -690,7 +717,7 @@ public final class SaltScreen extends Screen {
                 if (configTab) setInitialFocus(configName);
                 else setInitialFocus(search);
             } else {
-                // Reserved / future
+                if (mc != null) mc.setScreen(new GlobalChatScreen());
             }
             return true;
         }
@@ -751,18 +778,18 @@ public final class SaltScreen extends Screen {
         int rows = (int) Math.ceil(list.size() / (double) cols);
         int contentH = Math.max(0, rows * (cardH + gapModules) - gapModules);
         int maxScroll = Math.max(0, contentH - l.listH);
-        int sx = l.listX + l.listW - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
-        int upY = l.listY + SCROLL_BTN_PAD;
-        int downY = l.listY + l.listH - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+        int scrollY = l.footerY + (l.footerH - SCROLL_BTN_SIZE) / 2;
+        int downX = l.listX + l.listW - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
+        int upX = downX - SCROLL_BTN_SIZE - SCROLL_BTN_PAD;
 
         // Consume clicks on the scroll buttons even if there's nothing to scroll,
         // so users don't accidentally toggle modules behind them.
         int step = cardH + gapModules;
-        if (inside(mouseX, mouseY, sx, upY, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE)) {
+        if (inside(mouseX, mouseY, upX, scrollY, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE)) {
             if (maxScroll > 0) moduleScroll = clamp(moduleScroll - step, 0, maxScroll);
             return true;
         }
-        if (inside(mouseX, mouseY, sx, downY, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE)) {
+        if (inside(mouseX, mouseY, downX, scrollY, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE)) {
             if (maxScroll > 0) moduleScroll = clamp(moduleScroll + step, 0, maxScroll);
             return true;
         }
@@ -784,6 +811,18 @@ public final class SaltScreen extends Screen {
         if (idx < 0 || idx >= list.size()) return true;
 
         Module m = list.get(idx);
+        int cardX = l.listX + col * unitW;
+        int cardY = l.listY + row * unitH - (int) moduleScroll;
+
+        // Settings button inside each card (works on mobile).
+        int sb = 18;
+        int settingsX = cardX + colW - sb - 10;
+        int settingsY = cardY + cardH - sb - 10;
+        if (inside(mouseX, mouseY, settingsX, settingsY, sb, sb)) {
+            openSettings(m);
+            return true;
+        }
+
         if (button == 1) {
             openSettings(m);
         } else {
@@ -936,15 +975,14 @@ public final class SaltScreen extends Screen {
     }
 
     private void drawInputShell(DrawContext ctx, int x, int y, int w, int h, float alpha) {
-        ctx.fill(x, y, x + w, y + h, scaleAlpha(SEARCH_BG, alpha));
-        ctx.drawBorder(x, y, w, h, scaleAlpha(SEARCH_BORDER, alpha));
+        UiDraw.panelRounded(ctx, x, y, w, h, R_BTN, scaleAlpha(SEARCH_BG, alpha), scaleAlpha(SEARCH_BORDER, alpha));
     }
 
     private void drawActionButton(DrawContext ctx, int mouseX, int mouseY, int x, int y, int w, int h, String label, float alpha) {
         boolean hover = inside(mouseX, mouseY, x, y, w, h);
-        ctx.fill(x, y, x + w, y + h, scaleAlpha(hover ? ACTION_BTN_HOVER : ACTION_BTN, alpha));
-        ctx.drawBorder(x, y, w, h, scaleAlpha(0xFF4A5D86, alpha));
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(label), x + w / 2, y + 6, scaleAlpha(TEXT, alpha));
+        UiDraw.panelRounded(ctx, x, y, w, h, R_BTN, scaleAlpha(hover ? ACTION_BTN_HOVER : ACTION_BTN, alpha), scaleAlpha(SEARCH_BORDER, alpha));
+        int ty = y + (h - this.textRenderer.fontHeight) / 2;
+        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(label), x + w / 2, ty, scaleAlpha(TEXT, alpha));
     }
 
     private float animateToggle(Module module) {
