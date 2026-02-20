@@ -38,10 +38,7 @@ public final class GlobalChatScreen extends Screen {
     @Override
     protected void init() {
         ChatService.INSTANCE.ensureConnected();
-        ChatService.INSTANCE.setOnUpdate(v -> {
-            snapshot = ChatService.INSTANCE.snapshot();
-            return null;
-        });
+        ChatService.INSTANCE.setOnUpdate(v -> snapshot = ChatService.INSTANCE.snapshot());
         snapshot = ChatService.INSTANCE.snapshot();
 
         int w = 220;
