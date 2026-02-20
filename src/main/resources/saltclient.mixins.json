@@ -12,6 +12,7 @@
     "GameOptionsAccessor",
     "InGameHudMixin",
     "InGameOverlayRendererMixin",
+    "MinecraftClientAccessor",
     "MinecraftClientMixin",
     "MouseMixin",
     "ScreenMixin",

@@ -7,6 +7,7 @@ import com.saltclient.setting.IntSetting;
 import com.saltclient.setting.KeySetting;
 import com.saltclient.setting.Setting;
 import com.saltclient.module.Module;
+import com.saltclient.util.UiDraw;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -28,11 +29,13 @@ import java.util.List;
  * This stays intentionally simple (test client UI).
  */
 public final class ModuleSettingsScreen extends Screen {
-    private static final int BG = 0xD90B1018;
-    private static final int PANEL = 0xE0131A27;
-    private static final int PANEL_BORDER = 0xFF23324A;
-    private static final int TEXT = 0xFFE6EBFA;
-    private static final int MUTED = 0xFF8EA1C8;
+    private static final int BG = 0x7F0B1220;
+    private static final int PANEL = 0xF2FFFFFF;
+    private static final int PANEL_BORDER = 0xFFCBD5E1;
+    private static final int TEXT = 0xFF0F172A;
+    private static final int MUTED = 0xFF475569;
+
+    private static final int R_PANEL = 14;
 
     private final Screen parent;
     private final Module module;
@@ -185,8 +188,7 @@ public final class ModuleSettingsScreen extends Screen {
         int panelX = (this.width - panelW) / 2;
         int panelY = (this.height - panelH) / 2;
 
-        ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL);
-        ctx.drawBorder(panelX, panelY, panelW, panelH, PANEL_BORDER);
+        UiDraw.panelRounded(ctx, panelX, panelY, panelW, panelH, R_PANEL, PANEL, PANEL_BORDER);
 
         ctx.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, panelY + 16, TEXT);
 

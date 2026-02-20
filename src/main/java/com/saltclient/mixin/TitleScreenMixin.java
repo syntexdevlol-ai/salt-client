@@ -1,6 +1,7 @@
 package com.saltclient.mixin;
 
 import com.saltclient.SaltClient;
+import com.saltclient.gui.ElyLoginScreen;
 import com.saltclient.gui.SaltScreen;
 import com.saltclient.util.GuiSettings;
 import com.saltclient.util.PanoramaManager;
@@ -25,14 +26,22 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void salt_addMenuButton(CallbackInfo ci) {
-        if (!GuiSettings.customMainMenuEnabled()) return;
-
         int x = this.width / 2 - 100;
-        int y = this.height / 4 + 96 + 72;
-        this.addDrawableChild(ButtonWidget.builder(UiFonts.text("Salt Menu"), button -> {
+        int yBase = this.height / 4 + 96 + 42;
+
+        // Main Salt GUI (respect the setting so users can turn it off).
+        if (GuiSettings.customMainMenuEnabled()) {
+            this.addDrawableChild(ButtonWidget.builder(UiFonts.text("Salt Menu"), button -> {
+                MinecraftClient mc = MinecraftClient.getInstance();
+                if (mc != null) mc.setScreen(new SaltScreen());
+            }).dimensions(x, yBase + 30, 200, 20).build());
+        }
+
+        // Always provide Ely.by login entry point.
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Ely.by Login"), button -> {
             MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc != null) mc.setScreen(new SaltScreen());
-        }).dimensions(x, y, 200, 20).build());
+            if (mc != null) mc.setScreen(new ElyLoginScreen(this));
+        }).dimensions(x, yBase + 54, 200, 20).build());
     }
 
     @Inject(method = "render", at = @At("TAIL"))

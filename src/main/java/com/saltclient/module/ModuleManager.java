@@ -8,6 +8,7 @@ import com.saltclient.module.impl.crosshair.CrosshairEditorModule;
 import com.saltclient.module.impl.crosshair.CustomCrosshairModule;
 import com.saltclient.module.impl.chat.ChatOpacityModule;
 import com.saltclient.module.impl.chat.EmoteMenuModule;
+import com.saltclient.module.impl.chat.GlobalChatModule;
 import com.saltclient.module.impl.movement.AutoSprintModule;
 import com.saltclient.module.impl.movement.InventoryWalkModule;
 import com.saltclient.module.impl.misc.AutoRespawnModule;
@@ -134,6 +135,7 @@ public final class ModuleManager {
         register(new ToggleModule("chatautogg", "ChatAutoGG", "Auto-send gg (best-effort).", ModuleCategory.CHAT));
         register(new ChatOpacityModule());
         register(new EmoteMenuModule());
+        register(new GlobalChatModule());
 
         // Misc
         register(new GuiModule());

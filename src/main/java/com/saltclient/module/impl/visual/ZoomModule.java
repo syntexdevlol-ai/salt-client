@@ -33,8 +33,10 @@ public final class ZoomModule extends Module {
 
     @Override
     public void onTick(MinecraftClient mc) {
-        if (mc.options == null) return;
-        if (!SaltState.zooming) startZoom(mc);
+        if (mc == null || mc.options == null) return;
+
+        // Only touch FOV while an actual zoom is in progress (Hold key or module toggled on).
+        if (!SaltState.zooming) return;
         applyZoom(mc);
     }
 

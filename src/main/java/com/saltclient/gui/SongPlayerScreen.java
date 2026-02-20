@@ -1,6 +1,7 @@
 package com.saltclient.gui;
 
 import com.saltclient.audio.SongPlayerService;
+import com.saltclient.util.UiDraw;
 import com.saltclient.util.UiFonts;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,13 +13,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SongPlayerScreen extends Screen {
-    private static final int BG = 0xD90B1018;
-    private static final int PANEL = 0xE0131A27;
-    private static final int PANEL_BORDER = 0xFF23324A;
-    private static final int TEXT = 0xFFE6EBFA;
-    private static final int MUTED = 0xFF8EA1C8;
-    private static final int POSITIVE = 0xFF8DE39F;
-    private static final int NEGATIVE = 0xFFFF8A8A;
+    private static final int BG = 0x7F0B1220;
+    private static final int PANEL = 0xF2FFFFFF;
+    private static final int PANEL_BORDER = 0xFFCBD5E1;
+    private static final int TEXT = 0xFF0F172A;
+    private static final int MUTED = 0xFF475569;
+    private static final int POSITIVE = 0xFF16A34A;
+    private static final int NEGATIVE = 0xFFDC2626;
+
+    private static final int R_PANEL = 14;
+    private static final int R_CARD = 12;
+    private static final int R_BTN = 10;
 
     private final Screen parent;
 
@@ -62,10 +67,6 @@ public final class SongPlayerScreen extends Screen {
             SongPlayerService.stop();
             setStatus("Stopped", MUTED);
         }).dimensions(panelX + 206, panelY + panelH - 30, 80, 20).build());
-
-        addDrawableChild(ButtonWidget.builder(UiFonts.text("Spotify"), b -> {
-            if (this.client != null) this.client.setScreen(new SpotifyScreen(this));
-        }).dimensions(panelX + 294, panelY + panelH - 30, 90, 20).build());
 
         addDrawableChild(ButtonWidget.builder(UiFonts.text("Back"), b -> close())
             .dimensions(panelX + panelW - 100, panelY + panelH - 30, 80, 20)
@@ -175,8 +176,7 @@ public final class SongPlayerScreen extends Screen {
         int panelX = (this.width - panelW) / 2;
         int panelY = (this.height - panelH) / 2;
 
-        ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL);
-        ctx.drawBorder(panelX, panelY, panelW, panelH, PANEL_BORDER);
+        UiDraw.panelRounded(ctx, panelX, panelY, panelW, panelH, R_PANEL, PANEL, PANEL_BORDER);
 
         ctx.drawCenteredTextWithShadow(this.textRenderer, UiFonts.text("Song Player"), this.width / 2, panelY + 14, TEXT);
         ctx.drawTextWithShadow(this.textRenderer, UiFonts.text("Music folder: " + SongPlayerService.musicDir()), panelX + 20, panelY + 34, MUTED);
@@ -186,8 +186,7 @@ public final class SongPlayerScreen extends Screen {
         int listY = panelY + 70;
         int listW = panelW - 40;
         int listH = panelH - 130;
-        ctx.fill(listX, listY, listX + listW, listY + listH, 0x66131A2D);
-        ctx.drawBorder(listX, listY, listW, listH, 0xFF334568);
+        UiDraw.panelRounded(ctx, listX, listY, listW, listH, R_CARD, 0xFFF8FAFC, PANEL_BORDER);
 
         int rowH = 22;
         int visibleRows = Math.max(1, listH / rowH);
@@ -209,10 +208,10 @@ public final class SongPlayerScreen extends Screen {
             boolean selectedRow = idx == selected;
 
             int rowColor;
-            if (selectedRow) rowColor = 0xAA35518A;
-            else rowColor = hover ? 0x66304A78 : 0x3322304A;
+            if (selectedRow) rowColor = 0x260B63F6;
+            else rowColor = hover ? 0x140F172A : 0x00000000;
 
-            ctx.fill(listX + 2, y, listX + listW - 2, y + rowH, rowColor);
+            UiDraw.fillRounded(ctx, listX + 2, y, listX + listW - 2, y + rowH, R_BTN, rowColor);
             ctx.drawTextWithShadow(this.textRenderer, UiFonts.text(track.getFileName().toString()), listX + 10, y + 7, TEXT);
         }
 
